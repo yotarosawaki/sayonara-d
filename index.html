@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>さよなら、月の光</title>
+<title>さよならD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -145,7 +145,7 @@ input[type=range]{width:150px;accent-color:#bcd0ff}
   <!-- タイトル -->
   <section id="title" class="screen on">
     <div class="kicker">PIANO RHYTHM NOVEL</div>
-    <h1>さよなら、月の光</h1>
+    <h1>さよならD</h1>
     <div class="sub">― 灰の鍵盤と六つの調べ ―</div>
     <div class="menu">
       <button class="btn primary" id="bNew">はじめから</button>
@@ -277,10 +277,128 @@ function piano(m, t, vel, dest) {
 }
 function chime(notes, gap = .09, vel = .35) { initAudio(); const t = AC.currentTime + .02; notes.forEach((n, i) => piano(nm(n), t + i * gap, vel)); }
 
+const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+/* =========================================================
+   BGM（シーンごとに自動生成して流す）
+========================================================= */
+function pad(m, t, dur, vel, dest) {
+  const f = mtof(m), g = AC.createGain(), lp = AC.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 1400;
+  g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vel * .07, t + dur * .35); g.gain.linearRampToValueAtTime(.0001, t + dur);
+  for (const [r, type] of [[1, 'sine'], [1.004, 'triangle'], [.998, 'sine']]) {
+    const o = AC.createOscillator(); o.type = type; o.frequency.value = f * r; o.connect(lp); o.start(t); o.stop(t + dur + .05);
+  }
+  lp.connect(g); g.connect(dest);
+}
+function beep(freq, t, dur, vel, dest) {
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + .02);
+}
+let noiseBuf = null;
+function crackle(t, vel, dest) {
+  if (!noiseBuf) { noiseBuf = AC.createBuffer(1, AC.sampleRate * .2, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 6); }
+  const s = AC.createBufferSource(), bp = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = noiseBuf; bp.type = 'bandpass'; bp.frequency.value = 1500 + Math.random() * 3000; g.gain.value = vel;
+  s.connect(bp); bp.connect(g); g.connect(dest); s.start(t);
+}
+const N = s => s.split(' ').map(x => x === '.' ? null : nm(x));
+const rnd = i => { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); };
+const THEMES = {
+  // タイトル：月の光を思わせる変ニ長調のアルペジオ
+  title: { spb: .34, len: 32, ch: [N('Db2 Ab3 C4 F4 Ab4'), N('Gb1 Db3 F3 Bb3 Db4'), N('Eb2 Bb3 Db4 Gb4 Bb4'), N('Ab1 Eb3 Gb3 C4 Eb4')],
+    play(i, t, b, k) { const c = this.ch[i >> 3], s = i & 7, tones = [...c.slice(1), c[2] + 12, c[3] + 12];
+      if (s === 0) { piano(c[0], t, .3, b); pad(c[2], t, this.spb * 8, .8, b); pad(c[3], t, this.spb * 8, .6, b); if ((i >> 3) % 2 === 0) piano(c[4] + 12, t, .2, b); }
+      piano(tones[[0, 1, 2, 3, 4, 5, 3, 2][s]], t, .13, b); } },
+  // 夜：静かなイ短調、ときどき高い音がこぼれる
+  night: { spb: .5, len: 32, ch: [N('A1 E3 G3 B3 C4'), N('F1 C3 E3 A3 C4'), N('C2 G3 C4 D4 E4'), N('G1 D3 G3 B3 D4')],
+    play(i, t, b, k) { const c = this.ch[i >> 3], s = i & 7;
+      if (s === 0) { piano(c[0], t, .28, b); pad(c[1], t, this.spb * 8, .9, b); pad(c[3], t, this.spb * 8, .6, b); }
+      if (s === 2) piano(c[2], t, .12, b); if (s === 3) piano(c[3], t, .11, b); if (s === 4) piano(c[4], t, .11, b);
+      if ((s === 5 || s === 7) && rnd(k) < .55) piano(N('E5 G5 A5 C6 D6')[Math.floor(rnd(k + 7) * 5)], t, .12, b); } },
+  // 部屋：あたたかいヘ長調のワルツ
+  room: { spb: .36, len: 24, ch: [N('F2 A3 C4 F4'), N('D2 A3 C4 F4'), N('Bb1 A3 D4 F4'), N('C2 G3 Bb3 E4')],
+    mel: N('A5 . G5 F5 . . F5 . E5 D5 . . D5 . C5 A4 . . G4 . A4 Bb4 . C5'),
+    play(i, t, b, k) { const c = this.ch[Math.floor(i / 6)], s = i % 6;
+      if (s === 0) piano(c[0], t, .3, b);
+      if (s === 2 || s === 4) for (const n of c.slice(1)) piano(n, t, .07, b);
+      if (this.mel[i] && (k / this.len | 0) % 2 === 1) piano(this.mel[i], t, .17, b); } },
+  // 火事：低音のうねり、不協和音、火のはぜる音
+  fire: { spb: .14, len: 64,
+    play(i, t, b, k) { const sw = (i % 16) / 16;
+      piano(i % 2 ? nm('D2') : nm('C#2'), t, .13 + sw * .14, b);
+      if (i % 16 === 0) for (const n of N('C#3 D3 G3 A#3')) piano(n, t, .26, b);
+      if (i % 32 === 8) { piano(nm('B5'), t, .14, b); piano(nm('C6'), t, .14, b); }
+      if (rnd(k) < .35) crackle(t, .05 + rnd(k + 3) * .08, b); } },
+  // 病院：まばらな音と心電図のような電子音
+  hospital: { spb: .55, len: 32, mel: { 2: 'B4', 6: 'G5', 10: 'F#5', 14: 'E5', 18: 'B4', 22: 'D5', 26: 'C5', 30: 'B4' },
+    play(i, t, b, k) { if (i % 16 === 0) for (const n of N(i ? 'C3 G3 E4' : 'E3 B3 F#4')) pad(n, t, this.spb * 16, .8, b);
+      if (this.mel[i]) piano(nm(this.mel[i]), t, .13, b);
+      if (i % 4 === 0) beep(988, t, .09, .018, b); } },
+  // 学校：明るいハ長調、アルベルティ・バス
+  school: { spb: .24, len: 32, ch: [N('C3 G3 E3'), N('A2 E3 C3'), N('F2 C3 A2'), N('G2 D3 B2')],
+    mel: N('E5 . G5 . C6 . B5 A5 C5 . E5 . A5 . G5 E5 F5 . A5 . C6 . A5 F5 G5 . F5 . E5 . D5 .'),
+    play(i, t, b, k) { const c = this.ch[i >> 3]; piano(c[[0, 1, 2, 1][i % 4]], t, .11, b);
+      if (this.mel[i]) piano(this.mel[i], t, .16, b); } },
+  // 舞台：鼓動のような低音と、きらめく高音
+  stage: { spb: .45, len: 16,
+    play(i, t, b, k) { if (i === 0) for (const n of N('F4 Ab4 C5')) pad(n, t, this.spb * 16, .7, b);
+      if (i % 4 === 0) piano(nm('Db2'), t, .3, b); if (i % 4 === 1) piano(nm('Db2'), t, .17, b);
+      if (i === 10 && rnd(k) < .7) piano(N('C6 Ab5 F5 Eb6')[Math.floor(rnd(k + 1) * 4)], t, .1, b); } },
+  // 夜明け：希望のニ長調
+  dawn: { spb: .28, len: 32, ch: [N('D2 A3 D4 F#4 A4'), N('C#2 A3 C#4 E4 A4'), N('B1 F#3 B3 D4 F#4'), N('G1 D3 G3 B3 D4')],
+    play(i, t, b, k) { const c = this.ch[i >> 3], s = i & 7, tones = [...c.slice(1), c[2] + 12, c[3] + 12];
+      if (s === 0) { piano(c[0], t, .3, b); pad(c[1], t, this.spb * 8, .8, b); piano(c[4] + 12, t, .2, b); }
+      if (s === 4) piano(c[3] + 12, t, .16, b);
+      piano(tones[[0, 1, 2, 3, 4, 5, 4, 3][s]], t, .11, b); } },
+  // 推理：ハ短調の低いオスティナート
+  mystery: { spb: .3, len: 32, bass: N('C2 . G2 . Ab2 . G2 . C2 . G2 . Ab2 . G2 . F2 . C3 . Db3 . C3 . G1 . D2 . Eb2 . D2 .'),
+    play(i, t, b, k) { if (this.bass[i]) piano(this.bass[i], t, .26, b);
+      if (i % 8 === 4) for (const n of N(i < 24 ? 'B4 D5 F5' : 'B4 D5 G5')) piano(n, t, .06, b);
+      if (i % 16 === 14 && rnd(k) < .6) piano(nm('Ab5'), t, .1, b); } },
+  // 不穏：脅迫状の場面
+  tension: { spb: .6, len: 16,
+    play(i, t, b, k) { if (i === 0) { pad(nm('C2'), t, this.spb * 16, 1.2, b); pad(nm('C#3'), t, this.spb * 16, .6, b); piano(nm('C#2'), t, .3, b); }
+      if (i === 6) { piano(nm('B5'), t, .1, b); piano(nm('C6'), t, .1, b); }
+      if (i === 11) piano(nm('F#5'), t, .08, b); } },
+  // 回想：オルゴールのような「エリーゼのために」
+  memory: { spb: .3, len: 32, mel: N('E6 D#6 E6 D#6 E6 B5 D6 C6 A5 . . C5 E5 A5 B5 . . E5 G#5 B5 C6 . . . . . . . . . . .'),
+    play(i, t, b, k) { if (i === 0) for (const n of N('A3 C4 E4')) pad(n, t, this.spb * 16, .7, b);
+      if (i === 16) for (const n of N('G#3 B3 E4')) pad(n, t, this.spb * 16, .7, b);
+      if (this.mel[i]) { piano(this.mel[i], t, .16, b); beep(mtof(this.mel[i] + 12), t, .6, .006, b); } } },
+  // 章選択・演奏前：ジムノペディ風の穏やかな繰り返し
+  lobby: { spb: .52, len: 12,
+    play(i, t, b, k) { const s = i % 6, D = i >= 6;
+      if (s === 0) piano(nm(D ? 'D2' : 'G2'), t, .24, b);
+      if (s === 1) for (const n of N(D ? 'A3 C#4 F#4' : 'B3 D4 F#4')) piano(n, t, .07, b);
+      if (i === 3 && (k / 12 | 0) % 2) piano(nm('F#5'), t, .1, b);
+      if (i === 9 && (k / 12 | 0) % 2) piano(nm('A5'), t, .1, b); } }
+};
+const BGM_OF_BG = { title: 'title', night: 'night', room: 'room', fire: 'fire', hospital: 'hospital', school: 'school', stage: 'stage', dawn: 'dawn', black: null };
+const BGM = { want: null, cur: null, bus: null, i: 0, k: 0, next: 0, timer: 0 };
+function setBgm(key) {
+  if (key === undefined) return;
+  BGM.want = key;
+  if (!AC || key === BGM.cur) return;
+  if (BGM.bus) { const old = BGM.bus; old.gain.cancelScheduledValues(AC.currentTime); old.gain.setTargetAtTime(0, AC.currentTime, .4); setTimeout(() => { try { old.disconnect(); } catch (e) {} }, 3000); }
+  BGM.cur = key; BGM.bus = null; clearInterval(BGM.timer);
+  if (!key || !THEMES[key]) return;
+  const bus = makeBus(); bus.gain.setValueAtTime(.0001, AC.currentTime); bus.gain.exponentialRampToValueAtTime(.8, AC.currentTime + 1.5);
+  BGM.bus = bus; BGM.i = 0; BGM.k = 0; BGM.next = AC.currentTime + .35;
+  BGM.timer = setInterval(() => {
+    const th = THEMES[BGM.cur]; if (!th || AC.state !== 'running') return;
+    if (BGM.next < AC.currentTime - .1) BGM.next = AC.currentTime + .05; // タブ復帰時などに一気に鳴らない
+    while (BGM.next < AC.currentTime + .4) { th.play(BGM.i, BGM.next, bus, BGM.k); BGM.next += th.spb; BGM.i = (BGM.i + 1) % th.len; BGM.k++; }
+  }, 60);
+}
+// 最初の操作で音を有効化し、その場面のBGMを流す
+addEventListener('pointerdown', () => { if (!AC) { initAudio(); setBgm(BGM.want); } }, { capture: true });
+addEventListener('keydown', () => { if (!AC) { initAudio(); setBgm(BGM.want); } }, { capture: true });
+
 /* =========================================================
    譜面パーサ   "E5:.25 D#5 r:.5 C4+E4:1"  (長さ省略=直前と同じ)
 ========================================================= */
-const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 function nm(s) {
   const m = /^([A-G])(#|b)?(-?\d)$/.exec(s);
   if (!m) throw new Error('bad note ' + s);
@@ -488,7 +606,7 @@ const CHAPTERS = [
   '灯「ほとんど、何も。……ただ、夜中に、ピアノの一番低い『ラ』が鳴った気がして」',
   '鳴海「ラ、ですか」',
   '鳴海さんは、それ以上なにも言わなかった。けれど、その目は少しだけ鋭くなった。',
-  '@night',
+  '@night', '♪tension',
   'その夜、郵便受けに白い封筒が入っていた。差出人はない。',
   '中には、一行だけ。',
   '手紙『燃え残ったくせに、まだ弾くのか』'
@@ -502,7 +620,7 @@ const CHAPTERS = [
   '玲奈「綾瀬さん。……同情で、コンクールの選考に出られるなんて思わないでね」',
   '久我玲奈。学年でいちばん上手い子で、澪のことを「目標」だと公言していた子だ。',
   '灯「……思ってないよ」',
-  '@room',
+  '@room', '♪tension',
   '手紙はそれからも届いた。週に一度、同じ白い封筒で。',
   '手紙『おまえの音は、澪の真似だ』',
   '手紙『次は、指だ』',
@@ -532,9 +650,10 @@ const CHAPTERS = [
   '灯「いいですけど……何か分かるんですか」',
   '鳴海「紙というのは、案外おしゃべりなんです」',
   '@fire',
+  '♪memory',
   'その夜、夢を見た。燃える廊下。澪の唇が動く。',
   '澪「――――、――――」',
-  '@night',
+  '@night', '♪memory',
   '（あと少しで、聞こえそうなのに）'
   ] },
 
@@ -561,7 +680,7 @@ const CHAPTERS = [
   '玲奈「……悔しいけど、いい演奏だった」',
   '玲奈「澪さんの音に、少し似てた。でも、澪さんじゃなかった。あれは、あなたの音だよ」',
   '灯「……ありがとう、久我さん」',
-  '@night',
+  '@night', '♪mystery',
   'その夜、鳴海さんから電話があった。',
   '鳴海「手紙のこと、分かりました。あれは、ただの白い紙に印刷されたものではありません」',
   '鳴海「古い楽譜の裏です。表を薄く削って白く見せていた。光に透かすと、五線と、鉛筆の書き込みが残っています」',
@@ -574,7 +693,7 @@ const CHAPTERS = [
 
 { no: '第五章', title: '夜想曲', song: 'noct',
   pro: [
-  '@room',
+  '@room', '♪mystery',
   'コンクール本選の前夜。鳴海さんの頼みで、母と叔父さんが、わたしの家に集まった。',
   '叔父「なんだい、急に。調律師さんが、家族の話に何の用だ」',
   '鳴海「お時間はとらせません。ひとつ、音の話をするだけです」',
@@ -592,12 +711,15 @@ const CHAPTERS = [
   '鳴海さんは、白い封筒の束をテーブルに置いた。',
   '鳴海「灯さんに届いた手紙です。すべて、宗一郎さんの楽譜の裏に印刷されていた。あの夜、音楽室から持ち出されていなければ、燃えて消えていたはずの紙に」',
   '鳴海「同じものを警察にも渡しました。夜中の一時半、あなたの車が、洋館へ向かう高速の料金所を通っています」',
+  '♪none',
   '長い、長い沈黙。',
+  '♪tension',
   '叔父「……火をつけるつもりなんか、なかったんだ」',
   '叔父「親父が起きてきて、揉み合って、ストーブが倒れて……気づいたら、カーテンが燃えてた。怖くなって……逃げたんだ」',
   '叔父「会社が潰れかけてた。遺言さえなければって……。手紙も、手すりも……灯ちゃんがピアノを辞めてくれれば、全部元に戻るって……」',
   '母「恭介……あなた……！」',
   '（怒りたかった。叫びたかった。でも、喉から出てきたのは、別の言葉だった）',
+  '♪room',
   '灯「……おじいちゃんの好きだった曲、弾いてもいい？」',
   '鳴海「ええ。ショパンの『夜想曲』。宗一郎さんが僕に調律を頼むのは、いつもこの曲を弾く前でした」'
   ],
@@ -608,6 +730,7 @@ const CHAPTERS = [
   '（許せるかどうか、まだ分からない。たぶん、ずっと分からない）',
   '叔父さんが出ていったあと、鳴海さんが一冊の古い楽譜を差し出した。',
   '鳴海「持ち出された楽譜の束に、これが挟まっていたそうです。警察の方が、あなたにと」',
+  '♪memory',
   '表紙に、見慣れた丸い字。――澪の字だ。',
   '『月の光　― 灯へ ―』',
   '余白に、鉛筆で書き込みがあった。',
@@ -633,11 +756,11 @@ const CHAPTERS = [
   '@stage',
   '最後の音が、ホールの天井に溶けていく。',
   'その静けさの中で――聞こえた。',
-  '@fire', '!flash',
+  '@fire', '♪memory', '!flash',
   '燃える廊下。澪の手。わたしの背中を押しながら、澪は、笑っていた。',
   '澪「灯、弾いて。わたしの音は、灯の中にあるから」',
   '澪「――だから、さよならじゃないよ」',
-  '@stage', '!flash',
+  '@stage', '♪dawn', '!flash',
   '拍手が、雨みたいに降ってきた。',
   'わたしは立ち上がって、客席に、それから、どこか遠くに、頭を下げた。',
   '（ありがとう。……さよなら、澪）',
@@ -668,6 +791,7 @@ const BGS = {
 };
 let bgFront = 'A', curBg = '';
 function setBg(k) {
+  if (k in BGM_OF_BG) setBgm(BGM_OF_BG[k]);
   if (k === curBg || !BGS[k]) return; curBg = k;
   const next = bgFront === 'A' ? 'B' : 'A';
   $('#bg' + next).style.background = BGS[k].css;
@@ -714,7 +838,8 @@ function doFx(k) {
    画面切り替え
 ========================================================= */
 let screen = 'title';
-function show(id) { screen = id; document.querySelectorAll('.screen').forEach(e => e.classList.toggle('on', e.id === id)); }
+const BGM_OF_SCREEN = { title: 'title', select: 'lobby', songintro: 'lobby', game: null, result: null, ending: 'dawn' };
+function show(id) { screen = id; setBgm(BGM_OF_SCREEN[id]); document.querySelectorAll('.screen').forEach(e => e.classList.toggle('on', e.id === id)); }
 
 /* =========================================================
    ストーリー再生
@@ -722,6 +847,7 @@ function show(id) { screen = id; document.querySelectorAll('.screen').forEach(e 
 function parseLine(s) {
   if (s[0] === '@') return { bg: s.slice(1) };
   if (s[0] === '!') return { fx: s.slice(1) };
+  if (s[0] === '♪') return { bgm: s.slice(1) === 'none' ? null : s.slice(1) };
   if (s[0] === '#') { const [a, b] = s.slice(1).split('|'); return { card: [a, b] }; }
   let m = /^([^「『（\s]{1,8})「([\s\S]*)」$/.exec(s);
   if (m) return { n: m[1], t: '「' + m[2] + '」' };
@@ -742,6 +868,7 @@ function advance() {
   const e = ST.list[ST.i];
   if (e.bg) { setBg(e.bg); advance(); return; }
   if (e.fx) { doFx(e.fx); advance(); return; }
+  if ('bgm' in e) { setBgm(e.bgm); advance(); return; }
   if (e.card) {
     $('#box').classList.add('hide');
     $('#card .c1').textContent = e.card[0]; $('#card .c2').textContent = e.card[1];
@@ -766,7 +893,7 @@ $('#story').addEventListener('click', e => { if (e.target.closest('.tool')) retu
 $('#bSkip').addEventListener('click', () => {
   clearInterval(ST.timer); ST.typing = false; ST.cardOn = false; $('#card').classList.remove('on');
   // 背景だけは最後の状態にそろえる
-  if (ST.list) for (let j = ST.i + 1; j < ST.list.length; j++) if (ST.list[j].bg) setBg(ST.list[j].bg);
+  if (ST.list) for (let j = ST.i + 1; j < ST.list.length; j++) { if (ST.list[j].bg) setBg(ST.list[j].bg); if ('bgm' in ST.list[j]) setBgm(ST.list[j].bgm); }
   ST.i = ST.list ? ST.list.length : 0; advance();
 });
 $('#bStoryMenu').addEventListener('click', () => { clearInterval(ST.timer); ST.done = null; toTitle(); });
@@ -1003,7 +1130,10 @@ $('#pauseBtn').addEventListener('click', pauseGame);
 $('#bResume').addEventListener('click', resumeGame);
 $('#bRetry').addEventListener('click', () => { abortGame(); startGame(); });
 $('#bQuit').addEventListener('click', () => { abortGame(); openSelect(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+document.addEventListener('visibilitychange', () => {
+  if (screen === 'game') { if (document.hidden) pauseGame(); return; }
+  if (AC) document.hidden ? AC.suspend() : AC.resume();
+});
 
 gc.addEventListener('pointerdown', e => {
   e.preventDefault(); if (!G) return;
@@ -1086,7 +1216,7 @@ function showEnding() {
   setBg('dawn');
   const total = CHAPTERS.reduce((a, _, i) => a + (save.best[i] ? save.best[i].score : 0), 0);
   $('#roll').innerHTML = `
-    <h1>さよなら、月の光</h1><p>― Fin ―</p>
+    <h1>さよならD</h1><p>― Fin ―</p>
     <h3>登場人物</h3>
     <p>綾瀬 灯</p><p>羽鳥 澪</p><p>鳴海 透（調律師）</p><p>久我 玲奈</p><p>綾瀬 宗一郎</p><p>綾瀬 由紀子</p><p>綾瀬 恭介</p>
     <h3>演奏曲</h3>
