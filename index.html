@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>さよなら、月の光</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#eceff8; --dim:#a4abc4; --faint:#6b7291;
+  --moon:#bcd0ff; --gold:#f1d9a0; --ember:#ff8a4c;
+  --panel:rgba(8,11,28,.82); --line:rgba(255,255,255,.14);
+  --mincho:'Shippori Mincho','Hiragino Mincho ProN','Yu Mincho',serif;
+  --gothic:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#05070f;color:var(--ink);font-family:var(--gothic);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+.bgl{position:fixed;inset:0;transition:opacity 1.4s ease;opacity:0}
+.bgl.on{opacity:1}
+#bgfx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50}
+#flash.go{animation:flash 1.1s ease-out}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+.shake{animation:shake .5s linear}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-8px,4px)}40%{transform:translate(7px,-5px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(4px,3px)}}
+
+.screen{position:fixed;inset:0;display:none;z-index:2}
+.screen.on{display:flex}
+
+/* ---------- title ---------- */
+#title{flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 16px}
+#title .kicker{font-family:var(--mincho);letter-spacing:.5em;color:var(--dim);font-size:13px;margin-bottom:18px}
+#title h1{font-family:var(--mincho);font-weight:800;font-size:clamp(38px,8vw,76px);margin:0;letter-spacing:.12em;
+  text-shadow:0 0 30px rgba(170,195,255,.45);animation:rise 2.2s ease both}
+#title .sub{font-family:var(--mincho);color:var(--gold);letter-spacing:.3em;margin:14px 0 44px;font-size:clamp(13px,2.6vw,17px);animation:rise 2.2s .4s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.menu{display:flex;flex-direction:column;gap:12px;width:min(320px,100%);animation:rise 2s .9s ease both}
+.btn{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:999px;padding:13px 22px;
+  font-family:var(--mincho);font-size:17px;letter-spacing:.15em;transition:.2s}
+.btn:hover,.btn:focus-visible{background:rgba(188,208,255,.16);border-color:rgba(188,208,255,.5);outline:none}
+.btn.primary{background:linear-gradient(90deg,rgba(188,208,255,.22),rgba(241,217,160,.18));border-color:rgba(241,217,160,.45)}
+.btn:disabled{opacity:.35;cursor:default}
+.note{margin-top:34px;color:var(--faint);font-size:12px;line-height:1.8;max-width:560px;animation:rise 2s 1.3s ease both}
+
+/* ---------- chapter select ---------- */
+#select{flex-direction:column;align-items:center;padding:28px 16px;overflow-y:auto}
+#select h2,#songintro h2{font-family:var(--mincho);letter-spacing:.3em;font-weight:600;margin:10px 0 22px}
+#chapList{display:flex;flex-direction:column;gap:12px;width:min(640px,100%)}
+.chap{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.chap .no{font-family:var(--mincho);color:var(--gold);min-width:56px;font-size:14px}
+.chap .tt{flex:1;min-width:0}
+.chap .tt b{font-family:var(--mincho);font-size:18px;display:block}
+.chap .tt small{color:var(--dim);font-size:12px}
+.chap .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chap .acts .btn{padding:8px 14px;font-size:14px;letter-spacing:.05em}
+.chap.locked{opacity:.4}
+.rk{font-family:var(--mincho);font-weight:800;color:var(--gold);font-size:13px;margin-left:6px}
+
+/* ---------- story ---------- */
+#story{cursor:pointer}
+#box{position:absolute;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom));
+  width:min(900px,calc(100% - 32px));min-height:150px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:26px 26px 22px;backdrop-filter:blur(6px);transition:opacity .4s}
+#box.hide{opacity:0}
+#nm{position:absolute;top:-15px;left:20px;background:#0c1130;border:1px solid var(--line);border-radius:999px;
+  padding:3px 16px;font-family:var(--mincho);font-weight:600;font-size:15px;letter-spacing:.1em}
+#nm:empty{display:none}
+#tx{font-family:var(--mincho);font-size:clamp(16px,2.3vw,19px);line-height:1.95;white-space:pre-wrap;min-height:3.9em}
+#tx.mono{color:#c9d3f0;font-style:italic}
+#box.letter{background:rgba(242,236,220,.95);color:#2b2518;border-color:rgba(120,100,60,.4)}
+#box.letter #tx{color:#2b2518;font-style:normal;letter-spacing:.06em}
+#box.letter #nm{background:#efe6cc;color:#5a4a28;border-color:rgba(120,100,60,.4)}
+#more{position:absolute;right:18px;bottom:10px;font-size:12px;color:var(--dim);animation:blink 1.2s infinite}
+#box.letter #more{color:#7a6a48}
+@keyframes blink{50%{opacity:.2}}
+#storyTools{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;z-index:3}
+.tool{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--dim)}
+#card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;opacity:0;transition:opacity 1s}
+#card.on{opacity:1}
+#card .c1{font-family:var(--mincho);color:var(--gold);letter-spacing:.6em;font-size:15px;margin-bottom:16px}
+#card .c2{font-family:var(--mincho);font-weight:800;font-size:clamp(30px,6vw,52px);letter-spacing:.25em;text-shadow:0 0 24px rgba(170,195,255,.4)}
+#card .c3{margin-top:26px;color:var(--faint);font-size:12px;letter-spacing:.2em}
+
+/* ---------- song intro ---------- */
+#songintro{flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;overflow-y:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 22px;width:min(560px,100%)}
+.pieceName{font-family:var(--mincho);font-size:clamp(22px,4.5vw,30px);font-weight:800;text-align:center;letter-spacing:.08em}
+.composer{text-align:center;color:var(--gold);font-family:var(--mincho);margin:6px 0 4px}
+.arr{text-align:center;color:var(--faint);font-size:12px;margin-bottom:20px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;flex-wrap:wrap}
+.row label{color:var(--dim);font-size:14px}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{background:none;border:0;padding:8px 14px;font-size:13px;color:var(--dim)}
+.seg button.on{background:rgba(188,208,255,.2);color:var(--ink)}
+input[type=range]{width:150px;accent-color:#bcd0ff}
+.howto{margin:18px 0 20px;padding:14px;border-radius:12px;background:rgba(255,255,255,.04);font-size:13px;line-height:1.8;color:var(--dim)}
+.keys{display:flex;gap:6px;justify-content:center;margin:8px 0}
+.keys span{display:inline-grid;place-items:center;width:34px;height:40px;border-radius:6px;background:#e9ecf6;color:#111;font-weight:700;box-shadow:0 3px 0 #8a90a8}
+.center{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- game ---------- */
+#game{background:#04060d}
+#gc{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#pauseBtn{position:absolute;top:max(10px,env(safe-area-inset-top));left:10px;z-index:3;width:40px;height:40px;border-radius:50%;
+  background:rgba(0,0,0,.4);border:1px solid var(--line);font-size:14px}
+#pause{position:absolute;inset:0;z-index:4;display:none;align-items:center;justify-content:center;background:rgba(3,5,14,.75)}
+#pause.on{display:flex}
+#pause .menu{animation:none}
+
+/* ---------- result ---------- */
+#result{flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
+#rRank{font-family:var(--mincho);font-weight:800;font-size:clamp(80px,18vw,140px);line-height:1;text-align:center;
+  background:linear-gradient(180deg,#fff,#bcd0ff 50%,#f1d9a0);-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:rise 1s ease both}
+#rMsg{text-align:center;font-family:var(--mincho);font-size:18px;letter-spacing:.2em;margin:4px 0 18px}
+.stats{display:grid;grid-template-columns:1fr auto;gap:6px 24px;font-size:15px;margin:10px auto 22px;width:min(300px,100%)}
+.stats span:nth-child(odd){color:var(--dim)}
+.stats span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- ending ---------- */
+#ending{flex-direction:column;align-items:center;overflow:hidden}
+#roll{position:absolute;left:0;right:0;top:100%;text-align:center;font-family:var(--mincho);line-height:2.2;padding:0 16px;
+  animation:roll 42s linear forwards}
+#roll h1{font-size:clamp(34px,7vw,60px);letter-spacing:.15em;margin:0 0 10px;text-shadow:0 0 30px rgba(170,195,255,.45)}
+#roll h3{color:var(--gold);font-weight:600;letter-spacing:.3em;margin:60px 0 8px;font-size:15px}
+#roll p{margin:0;color:var(--ink);font-size:15px}
+#roll .small{color:var(--dim);font-size:12px;line-height:1.9}
+@keyframes roll{to{transform:translateY(calc(-100% - 100vh))}}
+#endBtns{position:absolute;bottom:max(20px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:10px;opacity:0;transition:opacity 1.5s}
+#endBtns.on{opacity:1}
+#endBtns .btn{background:rgba(20,22,48,.75);backdrop-filter:blur(6px)}
+</style>
+</head>
+<body>
+<div id="bgA" class="bgl on"></div>
+<div id="bgB" class="bgl"></div>
+<canvas id="bgfx"></canvas>
+<div id="flash"></div>
+
+<div id="app">
+  <!-- タイトル -->
+  <section id="title" class="screen on">
+    <div class="kicker">PIANO RHYTHM NOVEL</div>
+    <h1>さよなら、月の光</h1>
+    <div class="sub">― 灰の鍵盤と六つの調べ ―</div>
+    <div class="menu">
+      <button class="btn primary" id="bNew">はじめから</button>
+      <button class="btn" id="bSel">章をえらぶ</button>
+    </div>
+    <p class="note">ピアノミステリーへのオマージュとして作った、オリジナルの物語です。<br>
+      登場人物・団体はすべて架空のものです。音が出ます。<br>
+      楽曲はパブリックドメインの名曲をもとにした簡易・自由編曲です。</p>
+  </section>
+
+  <!-- 章選択 -->
+  <section id="select" class="screen">
+    <h2>章をえらぶ</h2>
+    <div id="chapList"></div>
+    <div style="margin-top:22px"><button class="btn" id="bSelBack">タイトルへ</button></div>
+  </section>
+
+  <!-- ストーリー -->
+  <section id="story" class="screen">
+    <div id="storyTools">
+      <button class="tool" id="bSkip">スキップ ▶▶</button>
+      <button class="tool" id="bStoryMenu">タイトル</button>
+    </div>
+    <div id="card"><div class="c1"></div><div class="c2"></div><div class="c3">― タップで つづける ―</div></div>
+    <div id="box" class="hide"><div id="nm"></div><div id="tx"></div><div id="more">▼</div></div>
+  </section>
+
+  <!-- 演奏前 -->
+  <section id="songintro" class="screen">
+    <div class="panel">
+      <div class="pieceName" id="siName"></div>
+      <div class="composer" id="siComp"></div>
+      <div class="arr" id="siArr"></div>
+      <div class="row"><label>むずかしさ</label>
+        <div class="seg" id="segDiff"><button data-v="easy">やさしい</button><button data-v="normal">ふつう</button></div></div>
+      <div class="row"><label>ノーツの速さ</label>
+        <div class="seg" id="segSpeed"><button data-v="0.8">ゆっくり</button><button data-v="1">ふつう</button><button data-v="1.3">はやい</button><button data-v="1.7">とても</button></div></div>
+      <div class="row"><label>タイミング調整 <span id="offV"></span></label>
+        <input type="range" id="offR" min="-150" max="150" step="10"></div>
+      <div class="howto">
+        落ちてくる光が線に重なった瞬間に、鍵盤をたたいて音を鳴らします。
+        <div class="keys"><span>S</span><span>D</span><span>F</span><span>J</span><span>K</span><span>L</span></div>
+        スマホ・タブレットは画面の下の鍵盤をタップ。Esc で一時停止。<br>
+        ランク C 以上でクリア。音がずれて聞こえるときはタイミング調整を ＋ に。
+      </div>
+      <div class="center"><button class="btn primary" id="bPlay">演奏をはじめる</button></div>
+    </div>
+  </section>
+
+  <!-- ゲーム -->
+  <section id="game" class="screen">
+    <canvas id="gc"></canvas>
+    <button id="pauseBtn" aria-label="一時停止">❚❚</button>
+    <div id="pause"><div class="menu">
+      <button class="btn primary" id="bResume">再開する</button>
+      <button class="btn" id="bRetry">はじめから弾く</button>
+      <button class="btn" id="bQuit">章選択へ</button>
+    </div></div>
+  </section>
+
+  <!-- リザルト -->
+  <section id="result" class="screen">
+    <div id="rRank">S</div>
+    <div id="rMsg"></div>
+    <div class="stats" id="rStats"></div>
+    <div class="center" id="rBtns"></div>
+  </section>
+
+  <!-- エンディング -->
+  <section id="ending" class="screen">
+    <div id="roll"></div>
+    <div id="endBtns"><button class="btn primary" id="bEndTitle">タイトルへ</button></div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* =========================================================
+   セーブ
+========================================================= */
+const SKEY = 'sayonara-tsuki-v1';
+let save = { cleared: 0, best: {}, settings: { diff: 'normal', speed: 1, offset: 0 } };
+try { const s = JSON.parse(localStorage.getItem(SKEY)); if (s) { save = Object.assign(save, s); save.settings = Object.assign({ diff:'normal', speed:1, offset:0 }, s.settings || {}); } } catch (e) {}
+function persist() { try { localStorage.setItem(SKEY, JSON.stringify(save)); } catch (e) {} }
+
+/* =========================================================
+   オーディオ（Web Audio で合成したピアノ）
+========================================================= */
+let AC = null, master = null, verb = null, uiBus = null;
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = AC.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.ratio.value = 4; comp.connect(AC.destination);
+  master = AC.createGain(); master.gain.value = 0.8; master.connect(comp);
+  verb = AC.createConvolver(); verb.buffer = impulse(3, 2.4);
+  const wet = AC.createGain(); wet.gain.value = 0.32; verb.connect(wet); wet.connect(master);
+  uiBus = makeBus();
+}
+function impulse(sec, decay) {
+  const len = Math.floor(AC.sampleRate * sec), b = AC.createBuffer(2, len, AC.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); }
+  return b;
+}
+function makeBus() { const g = AC.createGain(); g.connect(master); g.connect(verb); return g; }
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const PARTS = [[1, 1, 'triangle'], [1.0016, .45, 'sine'], [2.002, .32, 'sine'], [3.004, .11, 'sine'], [4.01, .05, 'sine']];
+function piano(m, t, vel, dest) {
+  if (!AC) return;
+  dest = dest || uiBus; t = Math.max(t, AC.currentTime);
+  const f = mtof(m), dur = Math.max(1.1, 5.4 - (m - 36) * 0.075);
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = .3;
+  lp.frequency.setValueAtTime(Math.min(14000, f * (3 + vel * 9)), t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(f * 1.3, 260), t + dur * .7);
+  const out = AC.createGain(), amp = vel * .2 * (m < 48 ? 1.4 : m > 84 ? .8 : 1);
+  out.gain.setValueAtTime(.0001, t);
+  out.gain.exponentialRampToValueAtTime(amp, t + .005);
+  out.gain.exponentialRampToValueAtTime(amp * .32, t + .4);
+  out.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  for (const [r, a, type] of PARTS) {
+    if (f * r > 16000) continue;
+    const o = AC.createOscillator(), pg = AC.createGain();
+    o.type = type; o.frequency.value = f * r; pg.gain.value = a;
+    o.connect(pg); pg.connect(lp); o.start(t); o.stop(t + dur + .05);
+  }
+  lp.connect(out); out.connect(dest);
+}
+function chime(notes, gap = .09, vel = .35) { initAudio(); const t = AC.currentTime + .02; notes.forEach((n, i) => piano(nm(n), t + i * gap, vel)); }
+
+/* =========================================================
+   譜面パーサ   "E5:.25 D#5 r:.5 C4+E4:1"  (長さ省略=直前と同じ)
+========================================================= */
+const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function nm(s) {
+  const m = /^([A-G])(#|b)?(-?\d)$/.exec(s);
+  if (!m) throw new Error('bad note ' + s);
+  return 12 * (+m[3] + 1) + PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+}
+function parseVoice(str) {
+  const ev = []; let t = 0, d = 1;
+  for (const tok of str.trim().split(/\s+/)) {
+    if (!tok || tok === '|') continue;
+    const [p, ds] = tok.split(':');
+    if (ds !== undefined) d = ds.includes('/') ? ds.split('/')[0] / ds.split('/')[1] : parseFloat(ds);
+    if (p !== 'r') ev.push({ b: t, d, p: p.split('+').map(nm) });
+    t += d;
+  }
+  return { ev, len: t };
+}
+const rep = (s, n) => Array(n).fill(s).join(' ');
+
+/* =========================================================
+   楽曲（パブリックドメイン作品の簡易・自由編曲）
+========================================================= */
+const SONGS = {};
+
+// エリーゼのために（ベートーヴェン）
+(() => {
+  const play = [
+    'E5:.25 D#5',
+    'E5 D#5 E5 B4 D5 C5', 'A4:.5 r:.25 C4 E4 A4', 'B4:.5 r:.25 E4 G#4 B4', 'C5:.5 r:.25 E4 E5 D#5',
+    'E5 D#5 E5 B4 D5 C5', 'A4:.5 r:.25 C4 E4 A4', 'B4:.5 r:.25 E4 C5 B4', 'A4:.5 r:.25 B4 C5 D5',
+    'E5:.75 G4:.25 F5 E5', 'D5:.75 F4:.25 E5 D5', 'C5:.75 E4:.25 D5 C5', 'B4:.5 r:.25 E4 E5 r',
+    'r E5 E6 r r D#5', 'E5 r r D#5 E5 D#5',
+    'E5 D#5 E5 B4 D5 C5', 'A4:.5 r:.25 C4 E4 A4', 'B4:.5 r:.25 E4 G#4 B4', 'C5:.5 r:.25 E4 E5 D#5',
+    'E5 D#5 E5 B4 D5 C5', 'A4:.5 r:.25 C4 E4 A4', 'B4:.5 r:.25 E4 C5 B4', 'A4:1.5'
+  ].join(' ');
+  const Am = 'A2:.25 E3 A3 r:.75', E = 'E2:.25 E3 G#3 r:.75', C = 'C3:.25 G3 C4 r:.75', Gc = 'G2:.25 G3 B3 r:.75', R = 'r:1.5';
+  const auto = ['r:.5', R, Am, E, Am, R, Am, E, Am, C, Gc, Am, E, R, R, R, Am, E, Am, R, Am, E, 'A2+E3+A3:1.5'].join(' ');
+  SONGS.elise = { name: 'エリーゼのために', comp: 'L.v. ベートーヴェン', arr: '冒頭部分の簡易編曲', bpm: 54, play, auto: [auto], autoVel: .42 };
+})();
+
+// ジムノペディ第1番（サティ）
+(() => {
+  const ch = { G: 'G2:1 B3+D4+F#4:2', D: 'D2:1 A3+C#4+F#4:2' };
+  const mel = [null, null, null, null,
+    'r:1 F#5:1 A5', 'G5:1 F#5 C#5', 'B4:1 C#5 D5', 'A4:3', 'F#4:3', null, null, null,
+    'r:1 F#5:1 A5', 'G5:1 F#5 C#5', 'B4:1 C#5 D5', 'A4:3', 'C#5:3', 'F#5:3', 'E5:3', null, null, 'END'];
+  let play = [], auto = [];
+  mel.forEach((m, i) => {
+    const c = ch[i % 2 ? 'D' : 'G'];
+    if (m === 'END') { play.push('A4+D5:3'); auto.push('D2+A3+C#4+F#4:3'); }
+    else if (m) { play.push(m); auto.push(c); }
+    else { play.push(c); auto.push('r:3'); }
+  });
+  SONGS.gymno = { name: 'ジムノペディ 第1番', comp: 'E. サティ', arr: '旋律と伴奏を抜き出した簡易編曲', bpm: 64, play: play.join(' '), auto: [auto.join(' ')], autoVel: .4 };
+})();
+
+// ピアノソナタ第14番「月光」第1楽章（ベートーヴェン）
+(() => {
+  const t3 = (a, b, c, n) => rep(`${a}:1/3 ${b} ${c}`, n);
+  const A = [t3('G#3', 'C#4', 'E4', 4), t3('G#3', 'C#4', 'E4', 4), t3('A3', 'C#4', 'E4', 2) + ' ' + t3('A3', 'D4', 'F#4', 2),
+    'G#3:1/3 B#3 F#4 G#3 C#4 E4 G#3 C#4 D#4 F#3 B#3 D#4'];
+  const AB = ['C#2+C#3:4', 'B1+B2:4', 'A1+A2:2 F#1+F#2:2', 'G#1+G#2:4'];
+  const M = ['r:3 G#4:.75 G#4:.25', 'G#4:3 G#4:.75 G#4:.25', 'A4:2 F#4:2', 'G#4:2 F#4:1 D#4:1'];
+  const MT = [t3('G#3', 'C#4', 'E4', 4), t3('G#3', 'C#4', 'E4', 4), t3('A3', 'C#4', 'E4', 2) + ' ' + t3('A3', 'D4', 'F#4', 2),
+    t3('G#3', 'C#4', 'E4', 2) + ' ' + t3('F#3', 'B#3', 'D#4', 2)];
+  const MB = ['C#2+C#3:4', 'B1+B2:4', 'A1+A2:2 F#1+F#2:2', 'G#1+G#2:4'];
+  const play = [...A, ...M, ...A, 'G#3+C#4+E4:4'].join(' ');
+  const bass = [...AB, ...MB, ...AB, 'C#2+C#3:4'].join(' ');
+  const trip = ['r:16', ...MT, 'r:16 r:4'].join(' ');
+  SONGS.moon = { name: 'ピアノソナタ第14番「月光」第1楽章', comp: 'L.v. ベートーヴェン', arr: '冒頭部分の簡易編曲', bpm: 54, play, auto: [bass, trip], autoVel: .36 };
+})();
+
+// アラベスク第1番（ドビュッシー）
+(() => {
+  const arp = ['E6:1/3 C#6 A5 E5 C#5 A4 C#5 E5 A5 C#6 A5 E5',
+    'D#6:1/3 B5 G#5 D#5 B4 G#4 B4 D#5 G#5 B5 G#5 D#5',
+    'C#6:1/3 A5 F#5 E5 C#5 A4 C#5 E5 F#5 A5 F#5 E5',
+    'B5:1/3 A5 F#5 D#5 B4 A4 B4 D#5 F#5 A5 B5 D#6'];
+  const arpB = ['A2:4', 'G#2:4', 'F#2:4', 'B1+B2:4'];
+  const lh = { E: 'E2:1/3 B2 G#3', A: 'A2:1/3 E3 C#4', B7: 'B2:1/3 F#3 A3' };
+  const th = [['G#5:1.5 F#5:.5 E5:1 D#5:1', 'E'], ['C#5:1.5 B4:.5 A4:1 G#4:1', 'A'], ['F#4:1 G#4 A4 B4', 'B7'], ['G#4:2 B4:2', 'E'],
+    ['G#5:1.5 F#5:.5 E5:1 D#5:1', 'E'], ['C#5:1 E5 A5 G#5', 'A'], ['F#5:1 E5 D#5 F#5', 'B7'], ['E5:4', 'E']];
+  const play = [...arp, ...th.map(x => x[0]), 'E6:1/3 B5 G#5 E5 B4 G#4 B4 E5 G#5 B5 E6 G#6', 'E5+G#5+B5:4'].join(' ');
+  const bass = [...arpB, ...th.map(x => rep(lh[x[1]], 4)), 'E2:4', 'E2+B2+E3:4'].join(' ');
+  SONGS.arab = { name: 'アラベスク 第1番', comp: 'C. ドビュッシー', arr: 'アラベスクの雰囲気に寄せた自由編曲', bpm: 64, play, auto: [bass], autoVel: .34 };
+})();
+
+// 夜想曲 第2番 Op.9-2（ショパン）
+(() => {
+  const C = { Eb: ['Eb2', 'G3+Bb3+Eb4'], Ab: ['Ab2', 'Ab3+C4+Eb4'], Bb7: ['Bb1', 'F3+Ab3+D4'], Cm: ['C2', 'G3+C4+Eb4'] };
+  const bar = k => rep(`${C[k][0]}:1 ${C[k][1]} ${C[k][1]}`, 4);
+  const B = {
+    b1: ['G5:4 F5:1 G5:1 F5:3 Eb5:2 Bb4:1', 'Eb'], b2: ['Ab5:3 C6:3 Bb5:2 Ab5:1 G5:2 Ab5:1', 'Ab'],
+    b3: ['F5:4 D5:1 Eb5:1 F5:3 Ab5:2 D5:1', 'Bb7'], b4: ['Eb5:5 G5:1 Bb5:3 G5:2 Bb4:1', 'Eb'],
+    b5: ['G5:4 F5:1 G5:1 Bb5:3 G5:2 Eb5:1', 'Eb'], b6: ['Eb5:4 D5:1 Eb5:1 G5:3 C6:2 Bb5:1', 'Cm'],
+    b7: ['Ab5:3 F5:3 D5:3 F5:2 Bb4:1', 'Bb7'], b8: ['G5:1 Ab5 G5 F5 Eb5 D5 Eb5 G5 Bb5 Eb6:3', 'Eb']
+  };
+  const order = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b1', 'b2', 'b3', 'b8'];
+  const play = ['Bb4:1', ...order.map(k => B[k][0]), 'Eb5+G5+Bb5:6'].join(' ');
+  const auto = ['r:1', ...order.map(k => bar(B[k][1])), 'Eb2+Bb2+G3:6'].join(' ');
+  SONGS.noct = { name: '夜想曲 第2番 変ホ長調 Op.9-2', comp: 'F. ショパン', arr: '夜想曲の雰囲気に寄せた自由編曲', bpm: 138, play, auto: [auto], autoVel: .3 };
+})();
+
+// 月の光（ドビュッシー）
+(() => {
+  const p1 = ['r:2 Ab4+F5:7', 'r:1 Ab4+Eb5:2 Ab4+F5:3 Ab4+Eb5:3', 'r:1 Gb4+Db5:2 Gb4+Eb5:3 Gb4+Db5:3', 'r:1 F4+C5:2 F4+Db5:3 F4+C5:3',
+    'r:1 Eb4+Bb4:2 Eb4+C5:3 Eb4+Bb4:3', 'r:1 Db4+Ab4:2 Db4+Bb4:3 Db4+Ab4:3', 'Gb4+Bb4:3 F4+Ab4:3 Eb4+Gb4:3', 'Db4+F4:9'];
+  const b1 = ['Db3:9', 'Db3:9', 'Gb2:9', 'F2:9', 'Eb2:9', 'Db2+Ab2:9', 'Ab1+Eb2:9', 'Db2+Ab2:9'];
+  const A = { Db: 'Db2:1 Ab2 Db3 F3 Ab3 Db4 Ab3 F3 Db3', Gb: 'Gb1:1 Db2 Gb2 Bb2 Db3 Gb3 Db3 Bb2 Gb2', Ebm: 'Eb2:1 Bb2 Db3 Gb3 Bb3 Db4 Bb3 Gb3 Db3',
+    Ab7: 'Ab1:1 Eb2 Ab2 C3 Gb3 C4 Gb3 C3 Ab2', Bbm: 'Bb1:1 F2 Bb2 Db3 F3 Bb3 F3 Db3 Bb2' };
+  const m2 = [['Ab4:2 Db5:1 F5:3 Ab5:3', 'Db'], ['Bb5:6 Ab5:3', 'Gb'], ['Gb5:3 F5:3 Eb5:3', 'Ebm'], ['Eb5:3 Db5:3 C5:3', 'Ab7'],
+    ['Db5:3 F5:3 Ab5:3', 'Db'], ['Db6:6 Bb5:3', 'Bbm'], ['Ab5:3 Gb5:3 F5:3', 'Gb'], ['Eb5:4 F5:1 Gb5:1 Eb5:3', 'Ab7']];
+  const play = [...p1, ...m2.map(x => x[0]), 'Db5+F5+Ab5+Db6:9'].join(' ');
+  const auto = [...b1, ...m2.map(x => A[x[1]]), 'Db2+Ab2+Db3:9'].join(' ');
+  SONGS.clair = { name: '月の光', comp: 'C. ドビュッシー', arr: '「ベルガマスク組曲」より 自由編曲', bpm: 108, play, auto: [auto], autoVel: .3 };
+})();
+
+/* =========================================================
+   物語
+   @背景  !演出  #章番号|章題  名前「せりふ」  名前『手紙』  （独白）  それ以外は地の文
+========================================================= */
+const CHAPTERS = [
+{ no: '第一章', title: '火の匂い', song: 'elise',
+  pro: [
+  '@night',
+  '十二月。湖のほとりに建つ古い洋館には、いつもピアノの音があった。',
+  '今夜は祖父・綾瀬宗一郎の、七十五歳の誕生日。久しぶりに親戚が集まる夜だった。',
+  '@room',
+  '澪「灯、指つめたくない？　ほら、あっためてあげる」',
+  '（羽鳥澪。わたしの従姉。両親を事故で亡くしてから、この家で一緒に育った、姉みたいなひと）',
+  '（そして、わたしよりずっと、ピアノが上手いひと）',
+  '（わたしにあるのは、耳だけだ。聞いた音の高さが全部わかる――絶対音感。澪が「ずるい」と笑う、わたしの唯一の自慢）',
+  '澪「……あのね。来年の春、パリの音楽院のオーディション、受けることにした」',
+  '灯「……え」',
+  '澪「おじいちゃんが背中を押してくれたの。灯も、いつか一緒においでよ」',
+  '祖父「二人とも。今夜はわしのために、あの曲を弾いてくれるんだろう？」',
+  '叔父「親父、またピアノの話か。……会社の件、あとで時間をもらうよ」',
+  '祖父「恭介。その話はもう済んだ。わしの金は、音楽のために使う。遺言も、書き直した」',
+  '（叔父の恭介さんの笑顔が、一瞬だけ、固まった気がした）',
+  '澪「――さ、灯。いこっか。いつもの『エリーゼのために』」',
+  '灯「うん」'
+  ],
+  epi: [
+  '@room',
+  '拍手。祖父は目を細めて、何度もうなずいていた。',
+  '祖父「いい音だ。二人の音はよく似ているようで、まるで違う。……それがいい」',
+  '叔父さんは乾杯のあと、夜十時ごろに「明日早いんで」と車で帰っていった。母は病院の夜勤で、今夜は留守だ。',
+  '@night',
+  'その夜、わたしは澪と同じ部屋で眠った。',
+  '澪「ねえ灯。もしも、わたしがいなくなっても――」',
+  '灯「なにそれ。縁起でもない」',
+  '澪「……ううん。なんでもない。おやすみ」',
+  '@black',
+  '夜中。どこか遠くで、ピアノの一番低い「ラ」が、ぼん、と鳴った気がした。',
+  '（……誰？　こんな時間に）',
+  '@fire', '!shake',
+  '――焦げた匂いで、目が覚めた。',
+  '廊下が、赤い。煙が天井を這っている。',
+  '澪「灯！　起きて！　窓から！」',
+  '澪の手が、わたしの背中を強く押す。',
+  '澪「――――、――――」',
+  '何か言った。でも、炎の音で、聞こえなかった。',
+  '@black',
+  '落ちる。冷たい雪。背中の痛み。見上げた窓の向こうで、赤い光が揺れていた。',
+  '@hospital',
+  '目が覚めたのは、三日後の病院だった。',
+  '母「灯……よかった、本当に……」',
+  '灯「澪は？　おじいちゃんは？」',
+  '母は答えなかった。答えないことが、答えだった。',
+  'わたしの両手と左の頬には、白い包帯が巻かれていた。',
+  '（さよならも、言えなかった）'
+  ] },
+
+{ no: '第二章', title: '灰の指', song: 'gymno',
+  pro: [
+  '@hospital',
+  '二月。退院したわたしは、母と二人、街の小さな借家に移った。',
+  '@room',
+  '焼けた洋館のかわりにあるのは、祖父が昔わたしに買ってくれた、古いアップライトピアノが一台だけ。',
+  '（鍵盤に、指を置く。……動かない。引きつれた皮膚が、「ド」ひとつ押すのを邪魔する）',
+  '母「無理しなくていいのよ。ピアノなんて、もう――」',
+  '灯「……うん」',
+  '週末、弁護士の先生がやって来た。叔父さんも一緒だった。',
+  '弁護士「宗一郎様の遺言です。財産の大部分は『綾瀬灯さんの音楽活動を支える基金』とする。ただし――」',
+  '弁護士「灯さんが二十歳になる前にピアノを辞めた場合、基金は解散し、法定相続人の皆さまに分けられます」',
+  '叔父「……親父らしいな。孫娘への呪いみたいなもんだ」',
+  '叔父「灯ちゃん、その手じゃ無理だろう。辞めたって、誰も責めやしないよ」',
+  '（叔父さんは優しく笑った。その笑顔が、なぜか少し怖かった）',
+  '――ピンポン。',
+  '？？？「調律に伺いました。鳴海と申します」',
+  '鳴海「宗一郎さんとは長いお付き合いで。『孫のピアノを年に一度見てやってくれ』と、十年ぶん前払いで頼まれていまして」',
+  '灯「おじいちゃんが……」',
+  '鳴海と名乗った調律師さんは、ピアノの前で目を閉じ、ひとつずつ音を鳴らした。',
+  '鳴海「いい子ですね、このピアノ。少し、寂しがってますが」',
+  '鳴海「……弾けない、と顔に書いてありますね」',
+  '灯「指が、動かないんです」',
+  '鳴海「ピアノは指で弾くものじゃありません。耳で弾くものです。指は、あとからついてきます」',
+  '鳴海「ゆっくりな曲にしましょう。サティの『ジムノペディ』。一音ずつ、そっと置くように」'
+  ],
+  epi: [
+  '@room',
+  '最後の和音が消えるまで、鳴海さんは黙って聴いていた。',
+  '鳴海「ほら。音は、ちゃんとあなたの中に残っていた」',
+  '（泣いていた。火事のあと、初めて）',
+  '鳴海「……ひとつ、うかがっても？　火事の夜のこと、何か覚えていますか」',
+  '灯「ほとんど、何も。……ただ、夜中に、ピアノの一番低い『ラ』が鳴った気がして」',
+  '鳴海「ラ、ですか」',
+  '鳴海さんは、それ以上なにも言わなかった。けれど、その目は少しだけ鋭くなった。',
+  '@night',
+  'その夜、郵便受けに白い封筒が入っていた。差出人はない。',
+  '中には、一行だけ。',
+  '手紙『燃え残ったくせに、まだ弾くのか』'
+  ] },
+
+{ no: '第三章', title: '月影の階段', song: 'moon',
+  pro: [
+  '@school',
+  '四月。わたしは音楽科のある高校に復学した。',
+  '（視線。包帯の取れた手を、みんなが見ている）',
+  '玲奈「綾瀬さん。……同情で、コンクールの選考に出られるなんて思わないでね」',
+  '久我玲奈。学年でいちばん上手い子で、澪のことを「目標」だと公言していた子だ。',
+  '灯「……思ってないよ」',
+  '@room',
+  '手紙はそれからも届いた。週に一度、同じ白い封筒で。',
+  '手紙『おまえの音は、澪の真似だ』',
+  '手紙『次は、指だ』',
+  '母「警察に相談しましょう。ねえ灯、もうピアノは――」',
+  '灯「やめない」',
+  '（やめたら基金は消える。でも、それだけじゃない。あの夜、澪が言いかけた言葉を、わたしはまだ聞いていない）',
+  '@night',
+  '叔父さんが様子を見に来てくれた日の、夜のことだった。',
+  '二階から降りようとして、階段の手すりを掴んだ瞬間――',
+  '!shake',
+  'ガタン、と手すりが外れた。',
+  'わたしは、階段を転げ落ちた。',
+  '@room',
+  '鳴海「骨は無事。手首の捻挫で済んだのは幸運でした」',
+  '鳴海さんは外れた手すりを拾い上げ、ねじ穴をのぞきこんだ。',
+  '鳴海「ねじが四本とも、同じだけ緩められています。自然に緩んだのなら、こうは揃いません」',
+  '灯「……誰かが、わざと？」',
+  '鳴海「犯人は、あなたに『弾かせたくない』。では――あなたが弾くのをやめて、得をするのは誰でしょう」',
+  '（基金。法定相続人。……答えを思い浮かべるのが、怖かった）',
+  '鳴海「今は考えなくていい。手首に負担の少ない曲を。ベートーヴェンの『月光』、第一楽章。三連符を、波のように」'
+  ],
+  epi: [
+  '@room',
+  '弾き終えると、胸の奥の震えが、少しだけ静まっていた。',
+  '鳴海「あなたの音は、怖がっている。でも、逃げてはいない」',
+  '鳴海「ひとつ、預かってもいいですか。これまでに届いた手紙を、全部」',
+  '灯「いいですけど……何か分かるんですか」',
+  '鳴海「紙というのは、案外おしゃべりなんです」',
+  '@fire',
+  'その夜、夢を見た。燃える廊下。澪の唇が動く。',
+  '澪「――――、――――」',
+  '@night',
+  '（あと少しで、聞こえそうなのに）'
+  ] },
+
+{ no: '第四章', title: 'アラベスク', song: 'arab',
+  pro: [
+  '@school',
+  '六月。全国ユースピアノコンクール、校内選考の日。',
+  '選考曲は自由。わたしが選んだのは、ドビュッシーの『アラベスク 第1番』。澪が、いちばん好きだった曲だ。',
+  '玲奈「……その曲、選ぶんだ」',
+  '灯「うん」',
+  '玲奈「去年の発表会で澪さんが弾いたの、覚えてる。水の上を光が走っていくみたいだった」',
+  '玲奈「半端な演奏したら、許さないから」',
+  '（それはたぶん、脅しじゃなくて、祈りだった）',
+  '控室。手が震える。傷あとが、照明の下で白く光る。',
+  '鳴海「緊張していますね」',
+  '灯「鳴海さん！？　どうしてここに」',
+  '鳴海「この学校のピアノも、僕の担当でして。……今日の子は、機嫌がいいですよ」',
+  '鳴海「アラベスクは『唐草模様』という意味です。線が絡みあって、ほどけて、また絡む」',
+  '鳴海「音そのものより、音と音の『あいだ』を聴いてください」'
+  ],
+  epi: [
+  '@school',
+  '結果発表。――学校代表、綾瀬灯。',
+  '玲奈「……悔しいけど、いい演奏だった」',
+  '玲奈「澪さんの音に、少し似てた。でも、澪さんじゃなかった。あれは、あなたの音だよ」',
+  '灯「……ありがとう、久我さん」',
+  '@night',
+  'その夜、鳴海さんから電話があった。',
+  '鳴海「手紙のこと、分かりました。あれは、ただの白い紙に印刷されたものではありません」',
+  '鳴海「古い楽譜の裏です。表を薄く削って白く見せていた。光に透かすと、五線と、鉛筆の書き込みが残っています」',
+  '鳴海「指番号の『4』を、閉じない三角で書く癖。……見覚えは、ありませんか」',
+  '（知っている。祖父の字だ。祖父は楽譜に、必ずその形の「4」を書いた）',
+  '灯「でも、おじいちゃんの楽譜は全部、あの音楽室で……燃えたはずです」',
+  '鳴海「ええ。だから、この手紙を書いた人は――」',
+  '鳴海「火事の夜、燃える前の音楽室にいた、ということになります」'
+  ] },
+
+{ no: '第五章', title: '夜想曲', song: 'noct',
+  pro: [
+  '@room',
+  'コンクール本選の前夜。鳴海さんの頼みで、母と叔父さんが、わたしの家に集まった。',
+  '叔父「なんだい、急に。調律師さんが、家族の話に何の用だ」',
+  '鳴海「お時間はとらせません。ひとつ、音の話をするだけです」',
+  '鳴海「灯さん。火事の夜、あなたは何を聞きましたか」',
+  '灯「……ピアノの、一番低いラ。夜中に、一度だけ」',
+  '鳴海「灯さんには絶対音感がある。聞き違えることはまずありません。音楽室のグランドピアノの最低音、A0。真っ暗な部屋で、誰かが鍵盤の端に手をついた音です」',
+  '鳴海「宗一郎さんは寝室にいた。澪さんと灯さんは二階。では、真夜中の音楽室に、誰がいたのか」',
+  '叔父「知らないね。俺は十時には車で帰った。朝まで街の家にいたよ」',
+  '鳴海「ええ、そううかがっています。ところで――書き直された遺言が、どこにしまわれていたか、ご存じですか」',
+  '母「……父は大事な書類を、いつもピアノの椅子の中に」',
+  '鳴海「そう。ご家族なら、皆さんご存じだった」',
+  '鳴海「恭介さん。あなたは夜中に洋館へ戻り、暗い音楽室で椅子の中を探った。そのとき鍵盤に手をつき、ラが鳴った」',
+  '鳴海「そして慌てて掴んだ紙の束は、遺言ではなく――宗一郎さんの楽譜だった」',
+  '叔父「でたらめだ！」',
+  '鳴海さんは、白い封筒の束をテーブルに置いた。',
+  '鳴海「灯さんに届いた手紙です。すべて、宗一郎さんの楽譜の裏に印刷されていた。あの夜、音楽室から持ち出されていなければ、燃えて消えていたはずの紙に」',
+  '鳴海「同じものを警察にも渡しました。夜中の一時半、あなたの車が、洋館へ向かう高速の料金所を通っています」',
+  '長い、長い沈黙。',
+  '叔父「……火をつけるつもりなんか、なかったんだ」',
+  '叔父「親父が起きてきて、揉み合って、ストーブが倒れて……気づいたら、カーテンが燃えてた。怖くなって……逃げたんだ」',
+  '叔父「会社が潰れかけてた。遺言さえなければって……。手紙も、手すりも……灯ちゃんがピアノを辞めてくれれば、全部元に戻るって……」',
+  '母「恭介……あなた……！」',
+  '（怒りたかった。叫びたかった。でも、喉から出てきたのは、別の言葉だった）',
+  '灯「……おじいちゃんの好きだった曲、弾いてもいい？」',
+  '鳴海「ええ。ショパンの『夜想曲』。宗一郎さんが僕に調律を頼むのは、いつもこの曲を弾く前でした」'
+  ],
+  epi: [
+  '@room',
+  '弾き終えたとき、叔父さんは両手で顔を覆って泣いていた。',
+  '叔父「……自首するよ。灯ちゃん……すまなかった」',
+  '（許せるかどうか、まだ分からない。たぶん、ずっと分からない）',
+  '叔父さんが出ていったあと、鳴海さんが一冊の古い楽譜を差し出した。',
+  '鳴海「持ち出された楽譜の束に、これが挟まっていたそうです。警察の方が、あなたにと」',
+  '表紙に、見慣れた丸い字。――澪の字だ。',
+  '『月の光　― 灯へ ―』',
+  '余白に、鉛筆で書き込みがあった。',
+  '澪の書き込み『灯へ。この曲は、灯の音で聴きたい。わたしの音は、きっと灯の音の中にあるから。コンクールでは、灯が弾いてね。』',
+  '（ページが、にじんで見えなくなった）'
+  ] },
+
+{ no: '終章', title: '月の光', song: 'clair',
+  pro: [
+  '@stage',
+  '全国ユースピアノコンクール、本選。',
+  '客席のざわめき。わたしの手を見て、誰かが小さく息をのむ。',
+  '玲奈「綾瀬さん」',
+  '灯「久我さん……来てくれたんだ」',
+  '玲奈「澪さんのぶんまで、なんて思わなくていい。あなたのぶんを、ちゃんと弾いてきて」',
+  '鳴海「ステージのピアノ、さっき見てきました。今夜は、よく歌いますよ」',
+  '灯「鳴海さん。……わたし、あの夜、澪が何て言ったのか、まだ思い出せないんです」',
+  '鳴海「思い出そうとしなくていい。弾いていれば、きっと聞こえます。音は、嘘をつきませんから」',
+  'アナウンス「エントリーナンバー十二番、綾瀬灯さん。曲は、ドビュッシー作曲『月の光』」',
+  '（ライトがまぶしい。――澪。いっしょに、いこう）'
+  ],
+  epi: [
+  '@stage',
+  '最後の音が、ホールの天井に溶けていく。',
+  'その静けさの中で――聞こえた。',
+  '@fire', '!flash',
+  '燃える廊下。澪の手。わたしの背中を押しながら、澪は、笑っていた。',
+  '澪「灯、弾いて。わたしの音は、灯の中にあるから」',
+  '澪「――だから、さよならじゃないよ」',
+  '@stage', '!flash',
+  '拍手が、雨みたいに降ってきた。',
+  'わたしは立ち上がって、客席に、それから、どこか遠くに、頭を下げた。',
+  '（ありがとう。……さよなら、澪）',
+  '@dawn',
+  '三月。湖のほとりの焼け跡に、小さな花が咲いていた。',
+  '鳴海「春からは、別の街の担当になります。……ですが、あのピアノの調律は、まだ九年ぶん残っていますから」',
+  '灯「じゃあ、毎年来てください。そのたびに、新しい曲を聴かせます」',
+  '鳴海「楽しみにしています」',
+  '（わたしは、澪のぶんまでは弾かない。わたしのぶんを弾く。その音の中に、きっと澪もいるから）'
+  ] }
+];
+
+const NAME_COLOR = { 灯: '#a9c8ff', 澪: '#ffb8cb', 鳴海: '#b8e6cc', 祖父: '#ecd7a2', 母: '#f3cba3', 叔父: '#d9a08f', 玲奈: '#cdb8ff' };
+
+/* =========================================================
+   背景と粒子
+========================================================= */
+const BGS = {
+  night:   { css: 'radial-gradient(circle at 78% 20%, rgba(230,236,255,.9) 0 2.6%, rgba(170,190,255,.18) 3.2%, transparent 22%), linear-gradient(#050817,#0f1636 60%,#1a2350)', p: 'snow' },
+  room:    { css: 'radial-gradient(ellipse at 30% 30%, rgba(255,196,120,.18), transparent 55%), linear-gradient(#140d0a,#24170f 60%,#120b08)', p: 'dust' },
+  fire:    { css: 'radial-gradient(ellipse at 50% 110%, rgba(255,120,40,.75), transparent 60%), linear-gradient(#1a0503,#3d0d05 55%,#6a1a06)', p: 'ember' },
+  hospital:{ css: 'linear-gradient(#1b2330,#2b3646 60%,#1a2130)', p: 'none' },
+  school:  { css: 'radial-gradient(ellipse at 80% 0%, rgba(200,220,255,.18), transparent 50%), linear-gradient(#10182a,#1d2940 60%,#121a2c)', p: 'dust' },
+  stage:   { css: 'radial-gradient(ellipse 30% 70% at 50% 20%, rgba(255,240,210,.28), transparent 70%), linear-gradient(#030306,#0b0b14)', p: 'dust' },
+  dawn:    { css: 'linear-gradient(#2a2f5a,#6b5a86 45%,#e3a9a6 80%,#f5d6b8)', p: 'petal' },
+  black:   { css: '#000', p: 'none' },
+  title:   { css: 'radial-gradient(circle at 82% 14%, rgba(230,236,255,.85) 0 3%, rgba(170,190,255,.2) 3.8%, transparent 26%), linear-gradient(#03050f,#0b1230 65%,#141c44)', p: 'snow' }
+};
+let bgFront = 'A', curBg = '';
+function setBg(k) {
+  if (k === curBg || !BGS[k]) return; curBg = k;
+  const next = bgFront === 'A' ? 'B' : 'A';
+  $('#bg' + next).style.background = BGS[k].css;
+  $('#bg' + next).classList.add('on'); $('#bg' + bgFront).classList.remove('on');
+  bgFront = next; particleType = BGS[k].p;
+}
+const fxc = $('#bgfx'), fx = fxc.getContext('2d');
+let particleType = 'snow', parts = [];
+function sizeFx() { fxc.width = innerWidth; fxc.height = innerHeight; }
+function spawn() {
+  const W = fxc.width, H = fxc.height, t = particleType;
+  if (t === 'snow') return { t, x: Math.random() * W, y: -10, vx: (Math.random() - .5) * .3, vy: .3 + Math.random() * .7, r: .8 + Math.random() * 2, a: .3 + Math.random() * .6 };
+  if (t === 'ember') return { t, x: Math.random() * W, y: H + 10, vx: (Math.random() - .5) * .8, vy: -(.8 + Math.random() * 1.8), r: 1 + Math.random() * 2.4, a: 1, life: 1 };
+  if (t === 'dust') return { t, x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .15, vy: -.05 - Math.random() * .15, r: .6 + Math.random() * 1.4, a: 0, life: 1 };
+  if (t === 'petal') return { t, x: Math.random() * W, y: -10, vx: .3 + Math.random() * .6, vy: .5 + Math.random() * .6, r: 3 + Math.random() * 3, a: .8, ph: Math.random() * 6 };
+  return null;
+}
+function fxLoop() {
+  requestAnimationFrame(fxLoop);
+  if (document.getElementById('game').classList.contains('on')) { fx.clearRect(0, 0, fxc.width, fxc.height); return; }
+  const W = fxc.width, H = fxc.height;
+  fx.clearRect(0, 0, W, H);
+  const want = { snow: 90, ember: 70, dust: 45, petal: 30, none: 0 }[particleType] || 0;
+  parts = parts.filter(p => p.t === particleType);
+  if (parts.length < want && Math.random() < .5) { const p = spawn(); if (p) parts.push(p); }
+  for (const p of parts) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.t === 'snow') { fx.fillStyle = `rgba(235,240,255,${p.a})`; fx.beginPath(); fx.arc(p.x, p.y, p.r, 0, 7); fx.fill(); if (p.y > H + 10) p.dead = 1; }
+    else if (p.t === 'ember') { p.life -= .006; p.vx += (Math.random() - .5) * .1; fx.fillStyle = `rgba(255,${120 + Math.random() * 80 | 0},40,${Math.max(0, p.life)})`; fx.beginPath(); fx.arc(p.x, p.y, p.r, 0, 7); fx.fill(); if (p.life <= 0 || p.y < -10) p.dead = 1; }
+    else if (p.t === 'dust') { p.life -= .002; p.a = Math.sin(p.life * Math.PI) * .5; fx.fillStyle = `rgba(255,230,190,${p.a})`; fx.beginPath(); fx.arc(p.x, p.y, p.r, 0, 7); fx.fill(); if (p.life <= 0) p.dead = 1; }
+    else if (p.t === 'petal') { p.ph += .03; p.x += Math.sin(p.ph) * .6; fx.save(); fx.translate(p.x, p.y); fx.rotate(p.ph); fx.fillStyle = 'rgba(255,205,215,.75)'; fx.beginPath(); fx.ellipse(0, 0, p.r, p.r * .55, 0, 0, 7); fx.fill(); fx.restore(); if (p.y > H + 10) p.dead = 1; }
+  }
+  parts = parts.filter(p => !p.dead);
+}
+addEventListener('resize', () => { sizeFx(); if (G) sizeGame(); });
+sizeFx(); setBg('title'); fxLoop();
+
+function doFx(k) {
+  if (k === 'shake') { const a = $('#app'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); }
+  if (k === 'flash') { const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+}
+
+/* =========================================================
+   画面切り替え
+========================================================= */
+let screen = 'title';
+function show(id) { screen = id; document.querySelectorAll('.screen').forEach(e => e.classList.toggle('on', e.id === id)); }
+
+/* =========================================================
+   ストーリー再生
+========================================================= */
+function parseLine(s) {
+  if (s[0] === '@') return { bg: s.slice(1) };
+  if (s[0] === '!') return { fx: s.slice(1) };
+  if (s[0] === '#') { const [a, b] = s.slice(1).split('|'); return { card: [a, b] }; }
+  let m = /^([^「『（\s]{1,8})「([\s\S]*)」$/.exec(s);
+  if (m) return { n: m[1], t: '「' + m[2] + '」' };
+  m = /^([^「『（\s]{1,8})『([\s\S]*)』$/.exec(s);
+  if (m) return { n: m[1], t: m[2], letter: true };
+  return { n: '', t: s, mono: s[0] === '（' };
+}
+const ST = { list: null, i: -1, done: null, typing: false, timer: 0, full: '', cardLock: false, cardOn: false };
+function playScript(lines, done) {
+  show('story'); ST.list = lines.map(parseLine); ST.i = -1; ST.done = done; ST.typing = false;
+  $('#box').classList.add('hide'); advance();
+}
+function advance() {
+  if (ST.cardOn) { if (ST.cardLock) return; ST.cardOn = false; $('#card').classList.remove('on'); }
+  if (ST.typing) { clearInterval(ST.timer); ST.typing = false; $('#tx').textContent = ST.full; $('#more').style.visibility = 'visible'; return; }
+  ST.i++;
+  if (!ST.list || ST.i >= ST.list.length) { const d = ST.done; ST.done = null; if (d) d(); return; }
+  const e = ST.list[ST.i];
+  if (e.bg) { setBg(e.bg); advance(); return; }
+  if (e.fx) { doFx(e.fx); advance(); return; }
+  if (e.card) {
+    $('#box').classList.add('hide');
+    $('#card .c1').textContent = e.card[0]; $('#card .c2').textContent = e.card[1];
+    $('#card').classList.add('on'); ST.cardOn = true; ST.cardLock = true;
+    chime(['Db4', 'Ab4', 'F5', 'C6'], .16, .3);
+    setTimeout(() => ST.cardLock = false, 1300);
+    return;
+  }
+  const box = $('#box'), tx = $('#tx'), nmEl = $('#nm');
+  box.classList.remove('hide'); box.classList.toggle('letter', !!e.letter);
+  nmEl.textContent = e.n; nmEl.style.color = e.letter ? '' : (NAME_COLOR[e.n] || '#d7dcef');
+  tx.classList.toggle('mono', !!e.mono);
+  ST.full = e.t; tx.textContent = ''; $('#more').style.visibility = 'hidden';
+  let k = 0; ST.typing = true;
+  const chars = [...e.t];
+  ST.timer = setInterval(() => {
+    k++; tx.textContent = chars.slice(0, k).join('');
+    if (k >= chars.length) { clearInterval(ST.timer); ST.typing = false; $('#more').style.visibility = 'visible'; }
+  }, 32);
+}
+$('#story').addEventListener('click', e => { if (e.target.closest('.tool')) return; advance(); });
+$('#bSkip').addEventListener('click', () => {
+  clearInterval(ST.timer); ST.typing = false; ST.cardOn = false; $('#card').classList.remove('on');
+  // 背景だけは最後の状態にそろえる
+  if (ST.list) for (let j = ST.i + 1; j < ST.list.length; j++) if (ST.list[j].bg) setBg(ST.list[j].bg);
+  ST.i = ST.list ? ST.list.length : 0; advance();
+});
+$('#bStoryMenu').addEventListener('click', () => { clearInterval(ST.timer); ST.done = null; toTitle(); });
+
+/* =========================================================
+   章の流れ： プロローグ → 演奏 → エピローグ
+========================================================= */
+let chap = 0, practice = false;
+function startChapter(i) {
+  chap = i; practice = false; initAudio();
+  const C = CHAPTERS[i];
+  playScript(['#' + C.no + '|' + C.title, ...C.pro], () => openIntro());
+}
+function openIntro() {
+  const C = CHAPTERS[chap], S = SONGS[C.song];
+  $('#siName').textContent = S.name; $('#siComp').textContent = S.comp; $('#siArr').textContent = '※ ' + S.arr;
+  syncSettingsUI(); setBg(curBg || 'night'); show('songintro');
+}
+function syncSettingsUI() {
+  const st = save.settings;
+  document.querySelectorAll('#segDiff button').forEach(b => b.classList.toggle('on', b.dataset.v === st.diff));
+  document.querySelectorAll('#segSpeed button').forEach(b => b.classList.toggle('on', +b.dataset.v === +st.speed));
+  $('#offR').value = st.offset; $('#offV').textContent = (st.offset > 0 ? '+' : '') + st.offset + 'ms';
+}
+$('#segDiff').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.diff = b.dataset.v; persist(); syncSettingsUI(); });
+$('#segSpeed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.speed = +b.dataset.v; persist(); syncSettingsUI(); });
+$('#offR').addEventListener('input', e => { save.settings.offset = +e.target.value; persist(); syncSettingsUI(); });
+$('#bPlay').addEventListener('click', () => startGame());
+
+function afterClear() {
+  if (practice) { openSelect(); return; }
+  const C = CHAPTERS[chap];
+  playScript(C.epi, () => {
+    if (chap < CHAPTERS.length - 1) startChapter(chap + 1);
+    else showEnding();
+  });
+}
+
+/* =========================================================
+   リズムゲーム本体
+========================================================= */
+const gc = $('#gc'), g2 = gc.getContext('2d');
+let GW = 0, GH = 0;
+const LANES = 6, KEYCODES = ['KeyS', 'KeyD', 'KeyF', 'KeyJ', 'KeyK', 'KeyL'], KEYLABEL = ['S', 'D', 'F', 'J', 'K', 'L'];
+const W_P = .055, W_G = .10, W_OK = .15;
+let G = null;
+
+function sizeGame() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  GW = gc.clientWidth; GH = gc.clientHeight;
+  gc.width = GW * dpr; gc.height = GH * dpr; g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function buildChart(song, diff) {
+  const spb = 60 / song.bpm, P = parseVoice(song.play);
+  let notes = P.ev.map(e => ({ t: e.b * spb, dur: e.d * spb, p: e.p, top: Math.max(...e.p), j: null }));
+  // 音の高さで鍵盤（レーン）を決める。低い音ほど左
+  const tops = [...new Set(notes.map(n => n.top))].sort((a, b) => a - b);
+  notes.forEach(n => n.lane = Math.min(LANES - 1, Math.floor(tops.indexOf(n.top) * LANES / tops.length)));
+  // 違う音が同じレーンに続くときは、音の動く向きへ一つずらす
+  for (let i = 1; i < notes.length; i++) {
+    const a = notes[i - 1], b = notes[i];
+    if (b.top !== a.top && b.lane === a.lane) {
+      let l = a.lane + (b.top > a.top ? 1 : -1);
+      if (l < 0 || l >= LANES) l = a.lane + (b.top > a.top ? -1 : 1);
+      b.lane = l;
+    }
+  }
+  const autos = []; let len = P.len;
+  for (const v of song.auto) { const A = parseVoice(v); len = Math.max(len, A.len); for (const e of A.ev) autos.push({ t: e.b * spb, p: e.p, v: song.autoVel || .4 }); }
+  if (diff === 'easy') {
+    const kept = []; let last = -9;
+    for (const n of notes) { if (n.t - last >= .42) { kept.push(n); last = n.t; } else autos.push({ t: n.t, p: n.p, v: .5 }); }
+    notes = kept;
+  }
+  autos.sort((a, b) => a.t - b.t);
+  return { notes, autos, end: len * spb };
+}
+function startGame() {
+  initAudio(); if (AC.state === 'suspended') AC.resume();
+  const C = CHAPTERS[chap], song = SONGS[C.song];
+  const ch = buildChart(song, save.settings.diff);
+  if (G && G.bus) try { G.bus.disconnect(); } catch (e) {}
+  G = {
+    song, chap, diff: save.settings.diff, notes: ch.notes, autos: ch.autos, end: ch.end,
+    ai: 0, head: 0, start: AC.currentTime + 3, offset: save.settings.offset / 1000, speed: save.settings.speed,
+    cnt: { p: 0, g: 0, ok: 0, miss: 0 }, combo: 0, max: 0, rings: [], jt: null,
+    flash: new Array(LANES).fill(-1e9), held: new Array(LANES).fill(false), paused: false, over: false, bus: makeBus()
+  };
+  $('#pause').classList.remove('on');
+  show('game'); sizeGame();
+  requestAnimationFrame(loop);
+}
+const songTime = () => AC.currentTime - G.start - G.offset;
+function loop() {
+  if (!G || G.over) return;
+  requestAnimationFrame(loop);
+  if (G.paused) return;
+  const t = songTime();
+  const ahead = AC.currentTime + .25;
+  while (G.ai < G.autos.length && G.start + G.autos[G.ai].t <= ahead) {
+    const a = G.autos[G.ai++]; for (const p of a.p) piano(p, G.start + a.t, a.v, G.bus);
+  }
+  for (let i = G.head; i < G.notes.length; i++) {
+    const n = G.notes[i]; if (n.t > t) break;
+    if (!n.j && t > n.t + W_OK) { n.j = 'miss'; G.cnt.miss++; G.combo = 0; G.jt = { r: 'miss', at: performance.now() }; }
+  }
+  while (G.head < G.notes.length && G.notes[G.head].j) G.head++;
+  draw(t);
+  if (t > G.end + 1.8 && G.head >= G.notes.length) finish();
+}
+function hit(l) {
+  if (!G || G.paused || G.over) return;
+  G.flash[l] = performance.now();
+  const t = songTime(); let best = null, bd = 9;
+  for (let i = G.head; i < G.notes.length; i++) {
+    const n = G.notes[i]; if (n.t > t + W_OK) break;
+    if (n.j || n.lane !== l) continue;
+    const d = Math.abs(n.t - t); if (d < bd) { bd = d; best = n; }
+  }
+  if (!best || bd > W_OK) return;
+  const r = bd <= W_P ? 'p' : bd <= W_G ? 'g' : 'ok';
+  best.j = r; G.cnt[r]++; G.combo++; G.max = Math.max(G.max, G.combo);
+  const vel = r === 'p' ? .85 : r === 'g' ? .72 : .58;
+  for (const p of best.p) piano(p, AC.currentTime, vel, G.bus);
+  G.jt = { r, at: performance.now() };
+  G.rings.push({ l, at: performance.now(), gold: best.p.length > 1 });
+}
+function laneGeom() {
+  const fw = Math.min(GW - 24, 540), x0 = (GW - fw) / 2, lw = fw / LANES;
+  const jy = Math.round(GH * .78), keyH = Math.min(GH - jy - 12, 110);
+  return { fw, x0, lw, jy, keyH };
+}
+const JT = { p: ['PERFECT', '#ffe8a8'], g: ['GREAT', '#a9d4ff'], ok: ['GOOD', '#bdf0c8'], miss: ['MISS', '#7c829c'] };
+function draw(t) {
+  const W = GW, H = GH, { fw, x0, lw, jy, keyH } = laneGeom();
+  const sp = H * .6 * G.speed, pnow = performance.now();
+  // 背景
+  const bg = g2.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#050817'); bg.addColorStop(.7, '#0d1433'); bg.addColorStop(1, '#070a18');
+  g2.fillStyle = bg; g2.fillRect(0, 0, W, H);
+  const moon = g2.createRadialGradient(W * .85, H * .14, 0, W * .85, H * .14, Math.min(W, H) * .35);
+  moon.addColorStop(0, 'rgba(225,233,255,.55)'); moon.addColorStop(.08, 'rgba(200,215,255,.22)'); moon.addColorStop(1, 'rgba(0,0,0,0)');
+  g2.fillStyle = moon; g2.fillRect(0, 0, W, H);
+  // レーン
+  g2.fillStyle = 'rgba(6,9,26,.78)'; g2.fillRect(x0, 0, fw, jy);
+  for (let l = 0; l < LANES; l++) {
+    const a = Math.max(0, 1 - (pnow - G.flash[l]) / 220), h = G.held[l] ? .5 : 0, v = Math.max(a, h);
+    if (v > 0) {
+      const gr = g2.createLinearGradient(0, jy, 0, jy - H * .45);
+      gr.addColorStop(0, `rgba(170,200,255,${.35 * v})`); gr.addColorStop(1, 'rgba(170,200,255,0)');
+      g2.fillStyle = gr; g2.fillRect(x0 + l * lw, jy - H * .45, lw, H * .45);
+    }
+  }
+  g2.strokeStyle = 'rgba(255,255,255,.07)'; g2.lineWidth = 1;
+  for (let l = 1; l < LANES; l++) { g2.beginPath(); g2.moveTo(x0 + l * lw + .5, 0); g2.lineTo(x0 + l * lw + .5, jy); g2.stroke(); }
+  // ノーツ
+  const vis = (jy + 40) / sp;
+  for (let i = G.head; i < G.notes.length; i++) {
+    const n = G.notes[i], dt = n.t - t; if (dt > vis) break;
+    if (n.j && n.j !== 'miss') continue;
+    const y = jy - dt * sp; if (y > H + 30) continue;
+    const x = x0 + n.lane * lw + 4, w = lw - 8, gold = n.p.length > 1, miss = n.j === 'miss';
+    const tail = Math.min(n.dur, 1.4) * sp * .85;
+    g2.fillStyle = miss ? 'rgba(120,120,140,.08)' : gold ? 'rgba(241,217,160,.13)' : 'rgba(170,200,255,.12)';
+    g2.fillRect(x + w * .3, y - tail, w * .4, tail);
+    g2.save();
+    if (!miss) { g2.shadowColor = gold ? 'rgba(255,220,150,.9)' : 'rgba(160,195,255,.9)'; g2.shadowBlur = 14; }
+    const ng = g2.createLinearGradient(0, y - 8, 0, y + 8);
+    if (miss) { ng.addColorStop(0, '#4a4e60'); ng.addColorStop(1, '#2c2f3c'); }
+    else if (gold) { ng.addColorStop(0, '#fff6dc'); ng.addColorStop(1, '#e2bb6c'); }
+    else { ng.addColorStop(0, '#f2f6ff'); ng.addColorStop(1, '#8fb0f5'); }
+    g2.fillStyle = ng; roundRect(x, y - 7, w, 14, 7); g2.fill(); g2.restore();
+  }
+  // 判定ライン
+  g2.save(); g2.shadowColor = 'rgba(190,210,255,.9)'; g2.shadowBlur = 12;
+  g2.fillStyle = 'rgba(225,233,255,.9)'; g2.fillRect(x0, jy - 1, fw, 2); g2.restore();
+  // 鍵盤
+  for (let l = 0; l < LANES; l++) {
+    const kx = x0 + l * lw + 2, down = G.held[l] || pnow - G.flash[l] < 90;
+    const kg = g2.createLinearGradient(0, jy + 6, 0, jy + 6 + keyH);
+    kg.addColorStop(0, down ? '#c9d4ee' : '#f4f5fa'); kg.addColorStop(1, down ? '#a9b4d4' : '#d6d9e6');
+    g2.fillStyle = kg; roundRect(kx, jy + 6 + (down ? 2 : 0), lw - 4, keyH, 6); g2.fill();
+    g2.fillStyle = '#343a55'; g2.font = '700 14px "Zen Kaku Gothic New",sans-serif'; g2.textAlign = 'center';
+    g2.fillText(KEYLABEL[l], kx + (lw - 4) / 2, jy + 6 + keyH - 12);
+    if (l === 2) { g2.fillStyle = '#1b1f33'; roundRect(x0 + 3 * lw - lw * .18, jy + 6, lw * .36, keyH * .55, 4); g2.fill(); }
+  }
+  // リング
+  G.rings = G.rings.filter(r => pnow - r.at < 400);
+  for (const r of G.rings) {
+    const k = (pnow - r.at) / 400, cx = x0 + r.l * lw + lw / 2;
+    g2.strokeStyle = r.gold ? `rgba(255,225,160,${1 - k})` : `rgba(190,215,255,${1 - k})`; g2.lineWidth = 3 * (1 - k) + .5;
+    g2.beginPath(); g2.ellipse(cx, jy, lw * .3 + k * lw * .55, 8 + k * 22, 0, 0, 7); g2.stroke();
+  }
+  // 判定文字
+  if (G.jt) {
+    const k = (pnow - G.jt.at) / 550;
+    if (k < 1) {
+      const [txt, col] = JT[G.jt.r];
+      g2.globalAlpha = 1 - k * k; g2.fillStyle = col; g2.textAlign = 'center';
+      g2.font = `800 ${26 + (1 - k) * 6}px "Shippori Mincho",serif`; g2.fillText(txt, W / 2, jy - H * .2 - k * 10);
+      g2.globalAlpha = 1;
+    }
+  }
+  if (G.combo >= 3) {
+    g2.fillStyle = 'rgba(236,239,248,.9)'; g2.textAlign = 'center';
+    g2.font = '800 40px "Shippori Mincho",serif'; g2.fillText(G.combo, W / 2, jy - H * .32);
+    g2.font = '12px "Zen Kaku Gothic New",sans-serif'; g2.fillStyle = 'rgba(200,210,235,.7)'; g2.fillText('COMBO', W / 2, jy - H * .32 + 18);
+  }
+  // 上部表示
+  const total = G.notes.length;
+  g2.fillStyle = 'rgba(255,255,255,.1)'; g2.fillRect(0, 0, W, 3);
+  g2.fillStyle = '#bcd0ff'; g2.fillRect(0, 0, W * Math.max(0, Math.min(1, t / G.end)), 3);
+  g2.textAlign = 'right'; g2.fillStyle = '#eceff8'; g2.font = '700 20px "Shippori Mincho",serif';
+  g2.fillText(String(calcScore()).padStart(7, '0'), W - 14, 34);
+  g2.textAlign = 'left'; g2.font = '13px "Shippori Mincho",serif'; g2.fillStyle = 'rgba(220,226,245,.75)';
+  g2.fillText(G.song.name, 60, 32);
+  if (t < 0) {
+    g2.textAlign = 'center'; g2.fillStyle = `rgba(236,239,248,${Math.min(1, -t)})`;
+    g2.font = '800 28px "Shippori Mincho",serif'; g2.fillText(G.song.name, W / 2, H * .36);
+    g2.font = '14px "Zen Kaku Gothic New",sans-serif'; g2.fillStyle = 'rgba(200,210,235,.8)';
+    g2.fillText(`${G.song.comp}　／　${total} notes　／　${G.diff === 'easy' ? 'やさしい' : 'ふつう'}`, W / 2, H * .36 + 30);
+  }
+}
+function roundRect(x, y, w, h, r) { g2.beginPath(); g2.moveTo(x + r, y); g2.arcTo(x + w, y, x + w, y + h, r); g2.arcTo(x + w, y + h, x, y + h, r); g2.arcTo(x, y + h, x, y, r); g2.arcTo(x, y, x + w, y, r); g2.closePath(); }
+function calcScore() {
+  const N = G.notes.length || 1, c = G.cnt;
+  return Math.round((c.p + c.g * .75 + c.ok * .4) / N * 900000 + G.max / N * 100000);
+}
+const rankOf = s => s >= 950000 ? 'S' : s >= 880000 ? 'A' : s >= 750000 ? 'B' : s >= 500000 ? 'C' : 'D';
+
+function pauseGame() { if (!G || G.over || G.paused) return; G.paused = true; AC.suspend(); $('#pause').classList.add('on'); }
+function resumeGame() { if (!G) return; $('#pause').classList.remove('on'); AC.resume().then(() => { G.paused = false; }); }
+function abortGame() { if (!G) return; G.over = true; const b = G.bus; b.gain.setValueAtTime(0, AC.currentTime); setTimeout(() => { try { b.disconnect(); } catch (e) {} }, 300); if (AC.state === 'suspended') AC.resume(); }
+$('#pauseBtn').addEventListener('click', pauseGame);
+$('#bResume').addEventListener('click', resumeGame);
+$('#bRetry').addEventListener('click', () => { abortGame(); startGame(); });
+$('#bQuit').addEventListener('click', () => { abortGame(); openSelect(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+gc.addEventListener('pointerdown', e => {
+  e.preventDefault(); if (!G) return;
+  const { x0, lw } = laneGeom(), r = gc.getBoundingClientRect();
+  const l = Math.floor((e.clientX - r.left - x0) / lw);
+  if (l >= 0 && l < LANES) { hit(l); G.held[l] = true; try { gc.setPointerCapture(e.pointerId); } catch (_) {} e.target._lane = e.target._lane || {}; e.target._lane[e.pointerId] = l; }
+});
+const releasePointer = e => { if (!G || !gc._lane) return; const l = gc._lane[e.pointerId]; if (l !== undefined) { G.held[l] = false; delete gc._lane[e.pointerId]; } };
+gc.addEventListener('pointerup', releasePointer); gc.addEventListener('pointercancel', releasePointer);
+
+function finish() {
+  G.over = true;
+  const s = calcScore(), rk = rankOf(s), clear = rk !== 'D';
+  if (clear) {
+    const b = save.best[G.chap];
+    if (!b || s > b.score) save.best[G.chap] = { score: s, rank: rk };
+    save.cleared = Math.max(save.cleared, G.chap + 1);
+    persist();
+  }
+  $('#rRank').textContent = rk;
+  $('#rMsg').textContent = clear ? (rk === 'S' ? '――すばらしい演奏' : '演奏成功') : 'もう一度、弾いてみよう';
+  $('#rStats').innerHTML = [['SCORE', s.toLocaleString()], ['PERFECT', G.cnt.p], ['GREAT', G.cnt.g], ['GOOD', G.cnt.ok], ['MISS', G.cnt.miss], ['MAX COMBO', G.max]]
+    .map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
+  const btns = $('#rBtns'); btns.innerHTML = '';
+  const add = (label, fn, primary) => { const b = document.createElement('button'); b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = label; b.onclick = fn; btns.appendChild(b); };
+  if (clear) {
+    add(practice ? '章選択へ' : '物語のつづきへ', afterClear, true);
+    add('もう一度弾く', () => startGame());
+  } else {
+    add('もう一度弾く', () => startGame(), true);
+    if (G.diff !== 'easy') add('「やさしい」で弾く', () => { save.settings.diff = 'easy'; persist(); startGame(); });
+    add('章選択へ', openSelect);
+  }
+  chime(clear ? ['Db5', 'F5', 'Ab5', 'Db6'] : ['A4', 'C5', 'E5'], .12, .3);
+  show('result');
+}
+
+/* =========================================================
+   キーボード
+========================================================= */
+addEventListener('keydown', e => {
+  if (screen === 'game') {
+    if (e.code === 'Escape') { G && G.paused ? resumeGame() : pauseGame(); return; }
+    const l = KEYCODES.indexOf(e.code);
+    if (l >= 0) { e.preventDefault(); if (!e.repeat) { hit(l); if (G) G.held[l] = true; } }
+  } else if (screen === 'story') {
+    if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); advance(); }
+  }
+});
+addEventListener('keyup', e => { if (screen === 'game' && G) { const l = KEYCODES.indexOf(e.code); if (l >= 0) G.held[l] = false; } });
+
+/* =========================================================
+   タイトル・章選択・エンディング
+========================================================= */
+function toTitle() { setBg('title'); show('title'); }
+function openSelect() {
+  setBg('night');
+  const list = $('#chapList'); list.innerHTML = '';
+  CHAPTERS.forEach((C, i) => {
+    const open = i <= save.cleared, b = save.best[i];
+    const el = document.createElement('div'); el.className = 'chap' + (open ? '' : ' locked');
+    el.innerHTML = `<div class="no">${C.no}</div><div class="tt"><b>${open ? C.title : '？？？'}</b>
+      <small>${open ? SONGS[C.song].name : 'まだ読めない'}${b ? `<span class="rk">${b.rank}</span>` : ''}</small></div><div class="acts"></div>`;
+    const acts = el.querySelector('.acts');
+    if (open) {
+      const s = document.createElement('button'); s.className = 'btn primary'; s.textContent = '物語'; s.onclick = () => startChapter(i); acts.appendChild(s);
+      if (b) { const p = document.createElement('button'); p.className = 'btn'; p.textContent = '演奏のみ'; p.onclick = () => { chap = i; practice = true; initAudio(); openIntro(); }; acts.appendChild(p); }
+    }
+    list.appendChild(el);
+  });
+  if (save.cleared >= CHAPTERS.length) {
+    const el = document.createElement('div'); el.className = 'chap';
+    el.innerHTML = '<div class="no">―</div><div class="tt"><b>エンディング</b><small>スタッフロール</small></div><div class="acts"></div>';
+    const s = document.createElement('button'); s.className = 'btn'; s.textContent = '見る'; s.onclick = showEnding;
+    el.querySelector('.acts').appendChild(s); list.appendChild(el);
+  }
+  show('select');
+}
+function showEnding() {
+  setBg('dawn');
+  const total = CHAPTERS.reduce((a, _, i) => a + (save.best[i] ? save.best[i].score : 0), 0);
+  $('#roll').innerHTML = `
+    <h1>さよなら、月の光</h1><p>― Fin ―</p>
+    <h3>登場人物</h3>
+    <p>綾瀬 灯</p><p>羽鳥 澪</p><p>鳴海 透（調律師）</p><p>久我 玲奈</p><p>綾瀬 宗一郎</p><p>綾瀬 由紀子</p><p>綾瀬 恭介</p>
+    <h3>演奏曲</h3>
+    <p>エリーゼのために ― L.v. ベートーヴェン</p><p>ジムノペディ 第1番 ― E. サティ</p>
+    <p>ピアノソナタ第14番「月光」第1楽章 ― L.v. ベートーヴェン</p><p>アラベスク 第1番 ― C. ドビュッシー</p>
+    <p>夜想曲 第2番 Op.9-2 ― F. ショパン</p><p>月の光 ― C. ドビュッシー</p>
+    <p class="small">（いずれもパブリックドメインの作品をもとにした簡易・自由編曲）</p>
+    <h3>あなたの演奏</h3>
+    ${CHAPTERS.map((C, i) => `<p>${C.no}『${C.title}』　${save.best[i] ? save.best[i].rank + '　' + save.best[i].score.toLocaleString() : '―'}</p>`).join('')}
+    <p style="margin-top:14px">合計スコア　${total.toLocaleString()}</p>
+    <h3>&nbsp;</h3>
+    <p class="small">この物語はピアノミステリーへのオマージュとして書かれたフィクションです。<br>実在の人物・団体・作品とは関係ありません。</p>
+    <h3>&nbsp;</h3>
+    <p>わたしのぶんを、弾く。</p><p>その音の中に、きっと――。</p>`;
+  const roll = $('#roll'); roll.style.animation = 'none'; void roll.offsetWidth; roll.style.animation = '';
+  $('#endBtns').classList.remove('on'); setTimeout(() => $('#endBtns').classList.add('on'), 6000);
+  show('ending');
+  chime(['Db4', 'Ab4', 'Db5', 'F5', 'Ab5', 'Db6'], .22, .28);
+}
+$('#bNew').addEventListener('click', () => {
+  if (save.cleared > 0 && !confirm('はじめから読みますか？（クリア記録は残ります）')) return;
+  startChapter(0);
+});
+$('#bSel').addEventListener('click', () => { initAudio(); openSelect(); });
+$('#bSelBack').addEventListener('click', toTitle);
+$('#bEndTitle').addEventListener('click', toTitle);
+</script>
+</body>
+</html>
