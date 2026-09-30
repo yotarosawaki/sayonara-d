@@ -79,15 +79,15 @@ button{font:inherit;color:inherit;cursor:pointer}
 #storyTools{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;z-index:3}
 .tool{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--dim)}
 /* 登場人物の淡いシルエット */
-#stage{position:absolute;left:0;right:0;top:0;bottom:110px;pointer-events:none;overflow:hidden}
-.fig{position:absolute;bottom:0;height:min(64vh,540px,112vw);aspect-ratio:200/330;transform:translateX(-50%) translateY(14px);
+#stage{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;overflow:hidden}
+.fig{position:absolute;bottom:-2vh;height:min(92vh,860px,190vw);aspect-ratio:200/600;transform:translateX(-50%) translateY(14px);
   color:var(--c);opacity:0;mix-blend-mode:screen;transition:left .8s ease,opacity .7s ease,transform .7s ease,color .7s ease;
-  -webkit-mask-image:linear-gradient(#000 45%,transparent 90%);mask-image:linear-gradient(#000 45%,transparent 90%)}
-.fig svg{width:100%;height:100%;display:block;overflow:visible;filter:blur(.6px) drop-shadow(0 0 24px var(--c));animation:breathe 5.5s ease-in-out infinite}
+  -webkit-mask-image:linear-gradient(#000 78%,transparent 100%);mask-image:linear-gradient(#000 78%,transparent 100%)}
+.fig svg{width:100%;height:100%;display:block;overflow:visible;filter:blur(.4px) drop-shadow(0 0 10px var(--c));animation:breathe 5.5s ease-in-out infinite}
 .fig .acc{fill:none;stroke:#fff;stroke-opacity:.45;stroke-width:2.2;stroke-linecap:round}
-.fig.on{opacity:.2;transform:translateX(-50%)}
-.fig.think{opacity:.34;transform:translateX(-50%)}
-.fig.speak{opacity:.58;transform:translateX(-50%)}
+.fig.on{opacity:.26;transform:translateX(-50%)}
+.fig.think{opacity:.4;transform:translateX(-50%)}
+.fig.speak{opacity:.6;transform:translateX(-50%)}
 .fig.talk svg{animation:talk .42s ease-in-out infinite alternate}
 #stage.dim .fig.on,#stage.dim .fig.speak,#stage.dim .fig.think{opacity:.12}
 @keyframes breathe{50%{transform:translateY(-3px) scale(1.004)}}
@@ -793,30 +793,69 @@ const NAME_COLOR = { 灯: '#a9c8ff', 澪: '#ffb8cb', 鳴海: '#b8e6cc', 祖父: 
 /* =========================================================
    登場人物のシルエット（淡い光の影）
 ========================================================= */
-const body = (w, top) => `<path d="M${100 - w} 330 C${100 - w + 4} ${top + 34} ${100 - w * .55} ${top} 100 ${top - 2} C${100 + w * .55} ${top} ${100 + w - 4} ${top + 34} ${100 + w} 330 Z"/><rect x="87" y="${top - 32}" width="26" height="36" rx="10"/>`;
+// 全身の立ち姿（viewBox 200x600、足元 y=590）。手足は太い線で描いて自然なポーズにする
+const limb = (pts, w) => '<path d="M' + pts.map(q => q.join(' ')).join(' L') + '" fill="none" stroke-width="' + w + '"/>';
+const dot = (x, y, r) => '<circle cx="' + x + '" cy="' + y + '" r="' + r + '"/>';
+const scaleFig = (svg, k) => '<g transform="translate(100 590) scale(' + k + ') translate(-100 -590)">' + svg + '</g>';
+const GIRL = {
+  head: '<ellipse cx="100" cy="62" rx="26" ry="32"/><rect x="92" y="86" width="16" height="28" rx="6"/>',
+  torso: '<path d="M64 124 Q66 111 82 109 L118 109 Q134 111 136 124 L131 200 Q127 238 129 266 L71 266 Q73 238 69 200 Z"/>',
+  skirt: (hem, spread) => '<path d="M71 260 L129 260 L' + (130 + spread) + ' ' + hem + ' Q100 ' + (hem + 8) + ' ' + (70 - spread) + ' ' + hem + ' Z"/>',
+  legs: (top) => limb([[87, top], [86, 490], [86, 574]], 18) + limb([[113, top], [114, 490], [114, 574]], 18) + '<ellipse cx="82" cy="580" rx="13" ry="7"/><ellipse cx="118" cy="580" rx="13" ry="7"/>',
+  armL: limb([[66, 126], [54, 206], [50, 286]], 19) + dot(50, 290, 9),
+  armR: limb([[134, 126], [146, 206], [150, 286]], 19) + dot(150, 290, 9)
+};
+const MAN = {
+  head: '<ellipse cx="100" cy="58" rx="27" ry="33"/><rect x="90" y="84" width="20" height="28" rx="7"/>',
+  torso: '<path d="M54 128 Q56 112 78 108 L122 108 Q144 112 146 128 L139 210 L137 302 L63 302 L61 210 Z"/>',
+  legs: '<path d="M63 294 L137 294 L135 448 L106 448 L100 336 L94 448 L65 448 Z"/>' + limb([[80, 440], [80, 572]], 27) + limb([[120, 440], [120, 572]], 27) + '<ellipse cx="76" cy="582" rx="19" ry="8"/><ellipse cx="124" cy="582" rx="19" ry="8"/>',
+  armL: limb([[56, 130], [43, 214], [40, 296]], 24) + dot(40, 300, 11),
+  armR: limb([[144, 130], [157, 214], [160, 296]], 24) + dot(160, 300, 11)
+};
 const SHAPES = {
-  // 灯：肩までのボブ
-  akari: body(70, 230) + '<ellipse cx="100" cy="160" rx="33" ry="40"/><path d="M62 164 C58 112 80 102 100 102 C120 102 142 112 138 164 C139 186 134 198 127 203 L123 174 L77 174 L73 203 C66 198 61 186 62 164Z"/>',
-  // 澪：背中までの長い髪
-  mio: body(72, 228) + '<ellipse cx="100" cy="156" rx="33" ry="40"/><path d="M64 150 C62 104 82 96 100 96 C118 96 138 104 136 150 L146 266 C132 276 121 258 119 232 L81 232 C79 258 68 276 54 266 Z"/>',
-  // 玲奈：ポニーテール
-  rena: body(68, 232) + '<ellipse cx="100" cy="164" rx="32" ry="39"/><path d="M67 160 C65 118 85 110 100 110 C117 110 135 118 133 160Z"/><path d="M127 120 C162 112 172 152 160 218 C152 188 147 162 129 144Z"/>',
-  // 母：まとめ髪
-  mother: body(68, 234) + '<ellipse cx="100" cy="168" rx="31" ry="38"/><path d="M69 164 C67 128 85 120 100 120 C116 120 133 128 131 164Z"/><circle cx="118" cy="122" r="16"/>',
-  // 祖父：少し背を丸めた老人と杖
-  elder: body(78, 244) + '<ellipse cx="96" cy="180" rx="32" ry="37"/><rect x="160" y="236" width="6" height="94" rx="3"/><path class="acc" d="M82 186 h10 M104 186 h10"/>',
-  // 鳴海：背が高く、眼鏡とコート
-  tuner: body(80, 214) + '<ellipse cx="100" cy="146" rx="32" ry="40"/><path d="M67 142 C65 100 86 94 102 94 C124 94 138 106 134 140 C124 124 90 118 67 142Z"/><g class="acc"><circle cx="87" cy="150" r="9"/><circle cx="113" cy="150" r="9"/><path d="M96 150 h8 M100 214 L86 262 M100 214 L114 262"/></g>',
-  // 叔父：がっしりした体格とネクタイ
-  uncle: body(88, 228) + '<ellipse cx="100" cy="160" rx="36" ry="42"/><path d="M63 152 C61 110 84 102 100 102 C118 102 140 110 138 152 C128 134 73 134 63 152Z"/><path class="acc" d="M100 228 L94 250 L100 290 L106 250 Z"/>',
-  // 弁護士
-  lawyer: body(76, 230) + '<ellipse cx="100" cy="162" rx="32" ry="39"/><path d="M68 156 C66 116 86 108 104 108 C122 108 136 118 132 150 C118 128 92 128 68 156Z"/><path class="acc" d="M100 230 L95 250 L100 286 L105 250 Z"/>'
+  // 灯：ボブの制服姿。胸に手を当てて、少しうつむき気味
+  akari: scaleFig(
+    '<path d="M71 68 Q67 27 100 26 Q133 27 129 68 Q131 94 123 101 L119 78 L81 78 L77 101 Q69 94 71 68Z"/>' + GIRL.head + GIRL.torso + GIRL.skirt(392, 20) + GIRL.legs(388) + GIRL.armL +
+    limb([[134, 126], [154, 194], [112, 166]], 19) + dot(109, 164, 10), .93),
+  // 澪：腰まで届く長い髪、長めのワンピース。片手を広げて話しかける
+  mio: scaleFig(
+    '<path d="M73 58 Q71 24 100 23 Q129 24 127 58 L138 236 Q120 246 112 206 L88 206 Q80 246 62 236 Z"/>' + GIRL.head + GIRL.torso + GIRL.skirt(430, 26) + GIRL.legs(424) + GIRL.armL +
+    limb([[132, 126], [158, 196], [174, 136]], 18) + '<ellipse cx="176" cy="126" rx="9" ry="13"/>', .98),
+  // 玲奈：ポニーテール、腕組み
+  rena: scaleFig(
+    '<path d="M74 58 Q73 26 100 25 Q127 26 126 58Z"/><path d="M120 34 Q152 28 152 72 Q150 116 136 146 Q138 102 122 64Z"/>' + GIRL.head + GIRL.torso + GIRL.skirt(388, 18) + GIRL.legs(384) +
+    limb([[66, 126], [48, 194], [128, 184]], 21) + limb([[134, 126], [152, 194], [72, 176]], 21), .96),
+  // 母：まとめ髪、長いスカート、両手を前で組む
+  mother: scaleFig(
+    '<path d="M75 58 Q74 26 100 25 Q126 26 125 58Z"/>' + dot(122, 34, 14) + GIRL.head + GIRL.torso + GIRL.skirt(470, 22) + GIRL.legs(462) +
+    limb([[66, 126], [54, 204], [96, 252]], 18) + limb([[134, 126], [146, 204], [104, 252]], 18) + dot(100, 256, 12), .97),
+  // 祖父：少し背を丸め、杖をつく
+  elder: scaleFig(
+    '<ellipse cx="110" cy="74" rx="26" ry="31"/><rect x="98" y="98" width="20" height="26" rx="7" transform="rotate(14 108 110)"/>' +
+    '<path d="M56 140 Q60 116 90 110 L122 112 Q146 120 146 142 L139 214 L137 302 L63 302 L60 214 Z"/>' + MAN.legs + MAN.armL +
+    limb([[142, 136], [154, 216], [152, 296]], 23) + dot(152, 300, 11) + limb([[153, 300], [162, 586]], 7), .9),
+  // 鳴海：背の高いコート姿。片手はポケット、片手をあごに当てて考えこむ
+  tuner: scaleFig(
+    '<path d="M72 54 Q70 20 101 19 Q132 20 128 54 Q120 36 100 36 Q80 36 72 54Z"/>' + MAN.head + MAN.torso +
+    '<path d="M56 130 L144 130 L156 452 Q100 462 44 452 Z"/>' + MAN.legs +
+    limb([[56, 130], [34, 210], [62, 282]], 24) +
+    limb([[144, 130], [168, 216], [120, 106]], 23) + dot(116, 100, 11), 1.04),
+  // 叔父：がっしりしたスーツ姿。片手をポケットに、片手を広げる
+  uncle: scaleFig(
+    '<path d="M71 54 Q69 20 100 19 Q131 20 129 54 Q120 38 100 38 Q80 38 71 54Z"/>' + '<ellipse cx="100" cy="58" rx="29" ry="34"/><rect x="89" y="84" width="22" height="28" rx="7"/>' +
+    '<path d="M48 130 Q50 110 76 106 L124 106 Q150 110 152 130 L146 212 L142 304 L58 304 L54 212 Z"/>' + MAN.legs +
+    limb([[52, 132], [34, 210], [20, 168]], 26) + dot(18, 162, 13) + limb([[148, 132], [170, 212], [142, 282]], 26), 1.0),
+  // 弁護士：細身のスーツ、書類を胸に抱える
+  lawyer: scaleFig(
+    '<path d="M73 52 Q72 21 102 20 Q130 21 127 50 Q114 34 96 38 Q80 40 73 52Z"/>' + MAN.head + MAN.torso + MAN.legs +
+    limb([[56, 130], [40, 208], [92, 196]], 22) + limb([[144, 130], [160, 208], [110, 200]], 22) +
+    '<rect x="74" y="160" width="52" height="66" rx="3" transform="rotate(-6 100 193)"/>', .98)
 };
 const WHO = { 灯: ['灯', 'akari'], 澪: ['澪', 'mio'], 玲奈: ['玲奈', 'rena'], 母: ['母', 'mother'], 祖父: ['祖父', 'elder'], 鳴海: ['鳴海', 'tuner'], '？？？': ['鳴海', 'tuner'], 叔父: ['叔父', 'uncle'], 弁護士: ['弁護士', 'lawyer'] };
 const CAST = []; let castClock = 0;
-const castMax = () => innerWidth >= 720 ? 3 : 2;
+const castMax = () => innerWidth >= 720 ? 4 : 3;
 function stageLayout() {
-  const pos = { 1: [50], 2: [30, 70], 3: [18, 50, 82] }[CAST.length] || [];
+  const pos = { 1: [50], 2: [34, 66], 3: [22, 50, 78], 4: [16, 38, 62, 84] }[CAST.length] || [];
   CAST.forEach((c, i) => c.el.style.left = pos[i] + '%');
 }
 function dropFig(c) { const el = c.el; el.className = 'fig'; setTimeout(() => el.remove(), 800); }
@@ -829,7 +868,7 @@ function stageSpeak(name, mode) {
   if (!c) {
     if (CAST.length >= castMax()) { const old = CAST.reduce((a, b) => a.t < b.t ? a : b); CAST.splice(CAST.indexOf(old), 1); dropFig(old); }
     const el = document.createElement('div'); el.className = 'fig';
-    el.innerHTML = `<svg viewBox="0 0 200 330" aria-hidden="true"><g fill="currentColor">${SHAPES[w[1]]}</g></svg>`;
+    el.innerHTML = `<svg viewBox="0 0 200 600" aria-hidden="true"><g fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round">${SHAPES[w[1]]}</g></svg>`;
     st.appendChild(el); c = { id: w[0], el, t: 0 }; CAST.push(c);
     stageLayout(); el.style.transition = 'none'; void el.offsetWidth; el.style.transition = '';
   }
