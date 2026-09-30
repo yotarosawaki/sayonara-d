@@ -78,6 +78,20 @@ button{font:inherit;color:inherit;cursor:pointer}
 @keyframes blink{50%{opacity:.2}}
 #storyTools{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;display:flex;gap:8px;z-index:3}
 .tool{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--dim)}
+/* 登場人物の淡いシルエット */
+#stage{position:absolute;left:0;right:0;top:0;bottom:110px;pointer-events:none;overflow:hidden}
+.fig{position:absolute;bottom:0;height:min(64vh,540px,112vw);aspect-ratio:200/330;transform:translateX(-50%) translateY(14px);
+  color:var(--c);opacity:0;mix-blend-mode:screen;transition:left .8s ease,opacity .7s ease,transform .7s ease,color .7s ease;
+  -webkit-mask-image:linear-gradient(#000 45%,transparent 90%);mask-image:linear-gradient(#000 45%,transparent 90%)}
+.fig svg{width:100%;height:100%;display:block;overflow:visible;filter:blur(.6px) drop-shadow(0 0 24px var(--c));animation:breathe 5.5s ease-in-out infinite}
+.fig .acc{fill:none;stroke:#fff;stroke-opacity:.45;stroke-width:2.2;stroke-linecap:round}
+.fig.on{opacity:.2;transform:translateX(-50%)}
+.fig.think{opacity:.34;transform:translateX(-50%)}
+.fig.speak{opacity:.58;transform:translateX(-50%)}
+.fig.talk svg{animation:talk .42s ease-in-out infinite alternate}
+#stage.dim .fig.on,#stage.dim .fig.speak,#stage.dim .fig.think{opacity:.12}
+@keyframes breathe{50%{transform:translateY(-3px) scale(1.004)}}
+@keyframes talk{from{transform:translateY(0)}to{transform:translateY(-4px)}}
 #card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   pointer-events:none;opacity:0;transition:opacity 1s}
 #card.on{opacity:1}
@@ -170,6 +184,7 @@ input[type=range]{width:150px;accent-color:#bcd0ff}
       <button class="tool" id="bStoryMenu">タイトル</button>
     </div>
     <div id="card"><div class="c1"></div><div class="c2"></div><div class="c3">― タップで つづける ―</div></div>
+    <div id="stage"></div>
     <div id="box" class="hide"><div id="nm"></div><div id="tx"></div><div id="more">▼</div></div>
   </section>
 
@@ -773,7 +788,57 @@ const CHAPTERS = [
   ] }
 ];
 
-const NAME_COLOR = { 灯: '#a9c8ff', 澪: '#ffb8cb', 鳴海: '#b8e6cc', 祖父: '#ecd7a2', 母: '#f3cba3', 叔父: '#d9a08f', 玲奈: '#cdb8ff' };
+const NAME_COLOR = { 灯: '#a9c8ff', 澪: '#ffb8cb', 鳴海: '#b8e6cc', 祖父: '#ecd7a2', 母: '#f3cba3', 叔父: '#d9a08f', 玲奈: '#cdb8ff', 弁護士: '#c9cfe0', '？？？': '#9aa3bd' };
+
+/* =========================================================
+   登場人物のシルエット（淡い光の影）
+========================================================= */
+const body = (w, top) => `<path d="M${100 - w} 330 C${100 - w + 4} ${top + 34} ${100 - w * .55} ${top} 100 ${top - 2} C${100 + w * .55} ${top} ${100 + w - 4} ${top + 34} ${100 + w} 330 Z"/><rect x="87" y="${top - 32}" width="26" height="36" rx="10"/>`;
+const SHAPES = {
+  // 灯：肩までのボブ
+  akari: body(70, 230) + '<ellipse cx="100" cy="160" rx="33" ry="40"/><path d="M62 164 C58 112 80 102 100 102 C120 102 142 112 138 164 C139 186 134 198 127 203 L123 174 L77 174 L73 203 C66 198 61 186 62 164Z"/>',
+  // 澪：背中までの長い髪
+  mio: body(72, 228) + '<ellipse cx="100" cy="156" rx="33" ry="40"/><path d="M64 150 C62 104 82 96 100 96 C118 96 138 104 136 150 L146 266 C132 276 121 258 119 232 L81 232 C79 258 68 276 54 266 Z"/>',
+  // 玲奈：ポニーテール
+  rena: body(68, 232) + '<ellipse cx="100" cy="164" rx="32" ry="39"/><path d="M67 160 C65 118 85 110 100 110 C117 110 135 118 133 160Z"/><path d="M127 120 C162 112 172 152 160 218 C152 188 147 162 129 144Z"/>',
+  // 母：まとめ髪
+  mother: body(68, 234) + '<ellipse cx="100" cy="168" rx="31" ry="38"/><path d="M69 164 C67 128 85 120 100 120 C116 120 133 128 131 164Z"/><circle cx="118" cy="122" r="16"/>',
+  // 祖父：少し背を丸めた老人と杖
+  elder: body(78, 244) + '<ellipse cx="96" cy="180" rx="32" ry="37"/><rect x="160" y="236" width="6" height="94" rx="3"/><path class="acc" d="M82 186 h10 M104 186 h10"/>',
+  // 鳴海：背が高く、眼鏡とコート
+  tuner: body(80, 214) + '<ellipse cx="100" cy="146" rx="32" ry="40"/><path d="M67 142 C65 100 86 94 102 94 C124 94 138 106 134 140 C124 124 90 118 67 142Z"/><g class="acc"><circle cx="87" cy="150" r="9"/><circle cx="113" cy="150" r="9"/><path d="M96 150 h8 M100 214 L86 262 M100 214 L114 262"/></g>',
+  // 叔父：がっしりした体格とネクタイ
+  uncle: body(88, 228) + '<ellipse cx="100" cy="160" rx="36" ry="42"/><path d="M63 152 C61 110 84 102 100 102 C118 102 140 110 138 152 C128 134 73 134 63 152Z"/><path class="acc" d="M100 228 L94 250 L100 290 L106 250 Z"/>',
+  // 弁護士
+  lawyer: body(76, 230) + '<ellipse cx="100" cy="162" rx="32" ry="39"/><path d="M68 156 C66 116 86 108 104 108 C122 108 136 118 132 150 C118 128 92 128 68 156Z"/><path class="acc" d="M100 230 L95 250 L100 286 L105 250 Z"/>'
+};
+const WHO = { 灯: ['灯', 'akari'], 澪: ['澪', 'mio'], 玲奈: ['玲奈', 'rena'], 母: ['母', 'mother'], 祖父: ['祖父', 'elder'], 鳴海: ['鳴海', 'tuner'], '？？？': ['鳴海', 'tuner'], 叔父: ['叔父', 'uncle'], 弁護士: ['弁護士', 'lawyer'] };
+const CAST = []; let castClock = 0;
+const castMax = () => innerWidth >= 720 ? 3 : 2;
+function stageLayout() {
+  const pos = { 1: [50], 2: [30, 70], 3: [18, 50, 82] }[CAST.length] || [];
+  CAST.forEach((c, i) => c.el.style.left = pos[i] + '%');
+}
+function dropFig(c) { const el = c.el; el.className = 'fig'; setTimeout(() => el.remove(), 800); }
+function stageClear() { CAST.forEach(dropFig); CAST.length = 0; $('#stage').classList.remove('dim'); }
+// 話している人を明るく、その場にいる人はうっすら残す
+function stageSpeak(name, mode) {
+  const w = WHO[name], st = $('#stage'); st.classList.remove('dim');
+  let c = w && CAST.find(x => x.id === w[0]);
+  if (!w || (!c && mode === 'think')) { CAST.forEach(x => x.el.className = 'fig on'); return; }
+  if (!c) {
+    if (CAST.length >= castMax()) { const old = CAST.reduce((a, b) => a.t < b.t ? a : b); CAST.splice(CAST.indexOf(old), 1); dropFig(old); }
+    const el = document.createElement('div'); el.className = 'fig';
+    el.innerHTML = `<svg viewBox="0 0 200 330" aria-hidden="true"><g fill="currentColor">${SHAPES[w[1]]}</g></svg>`;
+    st.appendChild(el); c = { id: w[0], el, t: 0 }; CAST.push(c);
+    stageLayout(); el.style.transition = 'none'; void el.offsetWidth; el.style.transition = '';
+  }
+  c.t = ++castClock;
+  c.el.style.setProperty('--c', NAME_COLOR[name] || '#d7dcef');
+  CAST.forEach(x => x.el.className = 'fig ' + (x === c ? (mode === 'think' ? 'think' : 'speak') : 'on'));
+  stageLayout();
+}
+function stageTalk(on) { CAST.forEach(x => x.el.classList.remove('talk')); const c = CAST.find(x => x.el.classList.contains('speak')); if (on && c) c.el.classList.add('talk'); }
 
 /* =========================================================
    背景と粒子
@@ -858,19 +923,19 @@ function parseLine(s) {
 const ST = { list: null, i: -1, done: null, typing: false, timer: 0, full: '', cardLock: false, cardOn: false };
 function playScript(lines, done) {
   show('story'); ST.list = lines.map(parseLine); ST.i = -1; ST.done = done; ST.typing = false;
-  $('#box').classList.add('hide'); advance();
+  $('#box').classList.add('hide'); stageClear(); advance();
 }
 function advance() {
   if (ST.cardOn) { if (ST.cardLock) return; ST.cardOn = false; $('#card').classList.remove('on'); }
-  if (ST.typing) { clearInterval(ST.timer); ST.typing = false; $('#tx').textContent = ST.full; $('#more').style.visibility = 'visible'; return; }
+  if (ST.typing) { clearInterval(ST.timer); ST.typing = false; $('#tx').textContent = ST.full; $('#more').style.visibility = 'visible'; stageTalk(false); return; }
   ST.i++;
   if (!ST.list || ST.i >= ST.list.length) { const d = ST.done; ST.done = null; if (d) d(); return; }
   const e = ST.list[ST.i];
-  if (e.bg) { setBg(e.bg); advance(); return; }
+  if (e.bg) { if (e.bg !== curBg) stageClear(); setBg(e.bg); advance(); return; }
   if (e.fx) { doFx(e.fx); advance(); return; }
   if ('bgm' in e) { setBgm(e.bgm); advance(); return; }
   if (e.card) {
-    $('#box').classList.add('hide');
+    $('#box').classList.add('hide'); stageClear();
     $('#card .c1').textContent = e.card[0]; $('#card .c2').textContent = e.card[1];
     $('#card').classList.add('on'); ST.cardOn = true; ST.cardLock = true;
     chime(['Db4', 'Ab4', 'F5', 'C6'], .16, .3);
@@ -881,12 +946,17 @@ function advance() {
   box.classList.remove('hide'); box.classList.toggle('letter', !!e.letter);
   nmEl.textContent = e.n; nmEl.style.color = e.letter ? '' : (NAME_COLOR[e.n] || '#d7dcef');
   tx.classList.toggle('mono', !!e.mono);
+  if (e.letter) $('#stage').classList.add('dim');
+  else if (e.n) stageSpeak(e.n);
+  else if (e.mono) stageSpeak('灯', 'think');
+  else stageSpeak(null);
+  stageTalk(!!e.n && !e.letter);
   ST.full = e.t; tx.textContent = ''; $('#more').style.visibility = 'hidden';
   let k = 0; ST.typing = true;
   const chars = [...e.t];
   ST.timer = setInterval(() => {
     k++; tx.textContent = chars.slice(0, k).join('');
-    if (k >= chars.length) { clearInterval(ST.timer); ST.typing = false; $('#more').style.visibility = 'visible'; }
+    if (k >= chars.length) { clearInterval(ST.timer); ST.typing = false; $('#more').style.visibility = 'visible'; stageTalk(false); }
   }, 32);
 }
 $('#story').addEventListener('click', e => { if (e.target.closest('.tool')) return; advance(); });
